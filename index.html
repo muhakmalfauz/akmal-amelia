@@ -1,6 +1,29 @@
-
 <!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
 <script>document.documentElement.classList.add("mewah")</script>
+<script>
+/* penyetel kecepatan otomatis: HP kuat tetap penuh (60 fps). Bila gambar tersendat atau HP terdeteksi lemah, beralih ke mode HEMAT:
+   gerak stabil 30 fps, efek kabur & kilau berat dimatikan. Tampilan tetap sama, hanya lebih ringan.
+   Uji manual: tambahkan ?mode=hemat atau ?mode=penuh di ujung alamat. */
+(function(){var de=document.documentElement,G=window.__GOV={m:0,why:'penuh',step:27,t:0,tc:0,dikunci:false,awal:0};
+function set(m,why){if(G.m===m)return;G.m=m;G.why=why;de.classList.toggle('hemat',m===1);}
+G.set=set;
+var q=/[?&]mode=(penuh|hemat)/.exec(location.search),paksa=q?q[1]:'';
+var mem=navigator.deviceMemory||8,inti=navigator.hardwareConcurrency||8,hemat=!!(navigator.connection&&navigator.connection.saveData);
+if(paksa==='hemat'){set(1,'dipaksa');G.dikunci=true;}
+else if(paksa==='penuh'){G.why='dipaksa penuh';G.dikunci=true;}
+else if(mem<=3||inti<=4||hemat)set(1,'HP lemah ('+mem+'GB, '+inti+' inti)');
+/* mulai mengukur 1,5 dtk setelah tamu menyentuh layar pertama kali (pemuatan awal tidak dihitung) */
+addEventListener('pointerdown',function(){if(!G.awal)G.awal=performance.now();},{capture:true,passive:true});
+addEventListener('keydown',function(){if(!G.awal)G.awal=performance.now();},{capture:true,passive:true});
+var last=0,n=0,lambat=0,buruk=0;
+function tick(ts){
+  if(last&&G.m===0&&!G.dikunci&&G.awal&&ts-G.awal>1500&&!document.hidden){var dt=ts-last;
+    if(dt<250){n++;if(dt>30)lambat++;}
+    if(n>=60){if(lambat/n>.3)buruk++;else buruk=Math.max(0,buruk-1);n=0;lambat=0;if(buruk>=2)set(1,'tersendat');}}
+  last=ts;requestAnimationFrame(tick);}
+requestAnimationFrame(tick);
+})();
+</script>
 <title>Undangan Akmal & Amelia</title>
 <meta name="description" content="Undangan pernikahan Akmal &amp; Amelia. Minggu, 21 Maret 2027, Bandar Lampung."><meta property="og:title" content="Undangan Pernikahan Akmal &amp; Amelia"><meta property="og:description" content="Minggu, 21 Maret 2027 · Bandar Lampung. Dengan penuh syukur, kami mengundang Anda."><meta property="og:type" content="website"><meta name="theme-color" content="#1a1410">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400;1,500&family=Tenor+Sans&display=swap">
@@ -348,6 +371,8 @@ html.mewah .mp h3,html.mewah .nms{
   text-shadow:none!important;filter:drop-shadow(0 0 1px rgba(250,245,236,.95)) drop-shadow(0 0 6px rgba(250,245,236,.75))}
 /* kilau: satu sapuan cahaya pelan (4,6 dtk) yang lewat bergiliran dari judul ke nama, lalu istirahat lama */
 html.mewah .sapu{animation:kilau 6.8s cubic-bezier(.42,0,.28,1) both}
+html.hemat .sapu,html.hemat.mewah .sapu{animation:none!important}
+html.hemat .kerlip{display:none!important}
 @keyframes kilau{from{background-position:100% 0}to{background-position:0 0}}
 /* kerlip bintang kecil yang muncul sesaat di ujung huruf saat cahaya lewat */
 .kerlip{position:absolute;width:11px;height:11px;margin:-5.5px 0 0 -5.5px;pointer-events:none;z-index:3;opacity:0;
@@ -1147,7 +1172,8 @@ function lukisLuntur(T){var w=.19;
   for(var q=0;q<1024;q++){var v=q/1023,a=sm(T-w,T+w,v),e=Math.exp(-Math.pow((a-.5)/.19,2)),al=a+e*.2*(1-a);
     TR_[q]=244-60*e*.15;TG_[q]=235-92*e*.15;TB_[q]=218-144*e*.15;TA_[q]=al>=1?255:al*255;}
   var d=LIMG.data;for(var k=0,j=0,n=LW*LH;k<n;k++,j+=4){var q2=LQ[k],g=LGR[k];d[j]=TR_[q2]+g;d[j+1]=TG_[q2]+g;d[j+2]=TB_[q2]+g;d[j+3]=TA_[q2];}
-  if(saring){if(!lcF){lcF=D.createElement('canvas');lcF.width=LW;lcF.height=LH;lxF=lcF.getContext('2d');lc.style.filter='none';}
+  if(window.__GOV.m===1){lc.style.filter='none';lx.putImageData(LIMG,0,0);}
+  else if(saring){if(!lcF){lcF=D.createElement('canvas');lcF.width=LW;lcF.height=LH;lxF=lcF.getContext('2d');lc.style.filter='none';}
     lxF.putImageData(LIMG,0,0);lx.clearRect(0,0,LW,LH);lx.filter='blur(1.2px)';lx.drawImage(lcF,0,0);lx.filter='none';}
   else lx.putImageData(LIMG,0,0);}
 var diP=false;
@@ -1162,7 +1188,7 @@ function cairan(tp){
   if(tp<12.75){var p1=c01((tp-10.4)/2.3);T=1.2-1.45*(.5-.5*Math.cos(PI*p1));}
   else{var p2=c01((tp-12.95)/2.3);T=-.25+1.5*(.5-.5*Math.cos(PI*p2));}
   if(T>=1.22){if(lOn){lOn=false;lc.style.visibility='hidden';}return;}
-  var key=Math.round(T*500);if(key===cairKunci)return;cairKunci=key;
+  var key=Math.round(T*(window.__GOV.m===1?90:500));if(key===cairKunci)return;cairKunci=key;
   if(!lOn){lOn=true;lc.style.visibility='visible';}lukisLuntur(T);}
 
 /* ================= satu frame ================= */
@@ -1229,6 +1255,7 @@ var mulai=-1,T0=performance.now(),last=T0,TJ=-1,jeda=0,sembunyiT=0,habis=false,t
 function kabar(){return window.SAMPUL_HOOK||{};}
 function frame(now){if(habis)return;requestAnimationFrame(frame);
   if(sembunyiT)return;
+  if(window.__GOV.m===1){if(now-window.__GOV.tc<window.__GOV.step)return;window.__GOV.tc=now;}   /* mode hemat: 30 fps stabil */
   var dtn=Math.min(.05,Math.max(.001,(now-last)/1000));last=now;
   var tt=(now-T0)/1000,tr=mulai<0?-1:(now-mulai-jeda)/1000;
   if(reduce&&tr>=0){jalanTenang(tr);return;}
@@ -2903,7 +2930,8 @@ function lukisLuntur(F,T,mode,cuci){
     else{al=a*(.94-.38*cuci)+(1-a)*.42*(1-cuci);al+=e*.22*(1-al);}   /* masuk: lapisan cuci tipis yang perlahan bening */
     LUT_R[q]=244-60*e*.15;LUT_G[q]=235-92*e*.15;LUT_B[q]=218-144*e*.15;LUT_A[q]=Math.min(242,al*255);}
   var Q=F.__q;for(k=0,j=0;k<n;k++,j+=4){q=Q[k];var g=GRAIN[k];d[j]=LUT_R[q]+g;d[j+1]=LUT_G[q]+g;d[j+2]=LUT_B[q]+g;d[j+3]=LUT_A[q];}
-  if(saringL){if(!lcF){lcF=document.createElement('canvas');lcF.width=LW;lcF.height=LH;lxF=lcF.getContext('2d');lc.style.filter='none';}
+  if(window.__GOV.m===1){lc.style.filter='none';lx.putImageData(LIMG,0,0);}
+  else if(saringL){if(!lcF){lcF=document.createElement('canvas');lcF.width=LW;lcF.height=LH;lxF=lcF.getContext('2d');lc.style.filter='none';}
     lxF.putImageData(LIMG,0,0);lx.clearRect(0,0,LW,LH);lx.filter='blur(1.2px)';lx.drawImage(lcF,0,0);lx.filter='none';}
   else lx.putImageData(LIMG,0,0);}
 [].forEach.call(document.querySelectorAll('.rv'),function(r){r.classList.add('in');});
@@ -2936,14 +2964,14 @@ addEventListener('resize',function(){setTimeout(ukurSemua,80);});
 function gaya(el,k,v){var c=el.__c||(el.__c={});if(c[k]!==v){el.style[k]=v;c[k]=v;}}
 function kartuOf(k){return pages[k].querySelector('.kartu');}
 /* tulisan keluar: memudar & sedikit kabur ke dalam kabut */
-function keluar(k,q){var c=kartuOf(k);if(!c)return;gaya(c,'opacity',(1-q).toFixed(3));gaya(c,'filter',q>.01?'blur('+(q*3).toFixed(1)+'px)':'');
+function keluar(k,q){var c=kartuOf(k);if(!c)return;gaya(c,'opacity',(1-q).toFixed(3));gaya(c,'filter',(q>.01&&window.__GOV.m===0)?'blur('+(q*3).toFixed(1)+'px)':'');
   gaya(c,'transform',q>.001?'translate3d(0,'+(-q*10).toFixed(1)+'px,0)':'');
   [].forEach.call(c.children,function(x){gaya(x,'opacity','');gaya(x,'transform','');gaya(x,'filter','');if(x.__ob!=null&&x.__ob!=='1'){x.style.setProperty('--ob','1');x.__ob='1';}});}   /* juga sisa kabur/garis hias bila bingkai terakhir transisi terlewat (HP lambat) */
 /* tulisan masuk: muncul baris demi baris dari kabut */
 function masuk(k,g){var c=kartuOf(k);if(!c)return;gaya(c,'opacity','');gaya(c,'filter','');gaya(c,'transform','');
   var n=c.children.length,st=.5/Math.max(1,n-1);
   [].forEach.call(c.children,function(x,ci){var o=sm(ci*st,ci*st+.5,g);gaya(x,'opacity',o>.999?'':o.toFixed(3));gaya(x,'transform',o>.999?'':'translate3d(0,'+((1-o)*12).toFixed(1)+'px,0)');
-    if(MEWAH){gaya(x,'filter',o>.999?'':'blur('+((1-o)*(1-o)*4).toFixed(2)+'px)');
+    if(MEWAH){gaya(x,'filter',(o>.999||window.__GOV.m===1)?'':'blur('+((1-o)*(1-o)*4).toFixed(2)+'px)');
       if(x.tagName==='H2'||x.classList.contains('orn')){var ob=o>.999?'1':sm(.35,1,o).toFixed(3);if(x.__ob!==ob){x.style.setProperty('--ob',ob);x.__ob=ob;}}}});}
 var MEWAH=document.documentElement.classList.contains('mewah');
 function setPT(n,v){PT[n].v=v;PT[n].q.length=0;}
@@ -2988,7 +3016,7 @@ function ctrl(now){if(!ready)return;jalanGlide(now);
     if(f<.4){T=1.2-1.42*(.5-.5*Math.cos(Math.PI*cl(f/.4)));F=LF[i%2];md=1;}
     else if(f<.47){T=-.22;F=LF[i%2];md=1;}
     else{var gp=cl((f-.47)/.53);T=-.2+1.45*(1-Math.pow(1-gp,1.6));F=MEKAR[i%2];md=-1;cu=sm(.15,1,gp);}
-    if(T<1.22||cu<1){lo='visible';var key=Math.round(T*500)*10+(md>0?1:2)+Math.round(cu*60)*100000+i*10000000;
+    if(T<1.22||cu<1){lo='visible';var hm=window.__GOV.m===1,key=Math.round(T*(hm?90:500))*10+(md>0?1:2)+Math.round(cu*(hm?16:60))*100000+i*10000000;
       if(key!==lunturTerakhir){lukisLuntur(F,T,md,cu);lunturTerakhir=key;}}}
   gaya(lc,'visibility',lo);
   /* jejak perjalanan */
@@ -3028,6 +3056,7 @@ function k1(tt,d){return ez(cl(tt/d));}
 function frame(){
   requestAnimationFrame(frame);
   if(!pageVis||window.__sampulTutup)return;
+  if(window.__GOV.m===1){var _n=performance.now();if(_n-window.__GOV.t<window.__GOV.step)return;window.__GOV.t=_n;}   /* mode hemat: 30 fps stabil */
   ptScPg=pages[cur]||null;ptSc=ptScPg?ptScPg.scrollTop:0;
   ctrl(performance.now());
   var now=performance.now(),t=(now-t0)/1000,tt=(now-anim.t0)/1000;
@@ -3195,20 +3224,20 @@ frame();
 /* alat ukur kecepatan: hanya aktif bila alamat ditambah ?uji=1 (tamu biasa tidak melihatnya) */
 (function(){if(!/[?&]uji(=|&|$)/.test(location.search))return;
 var el=document.createElement('pre');
-el.style.cssText='position:fixed;left:4px;top:calc(4px + env(safe-area-inset-top,0px));z-index:99999;margin:0;padding:6px 8px;font:10.5px/1.35 monospace;color:#7CFF7C;background:rgba(0,0,0,.78);border-radius:6px;pointer-events:none;white-space:pre;max-width:97vw';
+el.style.cssText='position:fixed;left:4px;top:calc(4px + env(safe-area-inset-top,0px));z-index:99999;margin:0;padding:6px 8px;font:9.5px/1.3 monospace;color:#7CFF7C;background:rgba(0,0,0,.78);border-radius:6px;pointer-events:none;white-space:pre;max-width:97vw';
 document.body.appendChild(el);
 var ua=navigator.userAgent,
   info=['DPR '+devicePixelRatio,'layar '+innerWidth+'x'+innerHeight,'RAM '+(navigator.deviceMemory||'?')+'GB','inti '+(navigator.hardwareConcurrency||'?')].join('  ')+'\n'+
        ((/Android [^;)]*/.exec(ua)||['?'])[0])+'  '+((/SamsungBrowser\/[\d.]+|OPR\/[\d.]+|Chrome\/[\d.]+|Version\/[\d.]+/.exec(ua)||['?'])[0])+'\n'+((/;\s*([^;)]*)\sBuild/.exec(ua)||/;\s*([^;)]*)\)\s*AppleWebKit/.exec(ua)||[0,'?'])[1]),
   P={},order=[],last=0,fpsN=0,fpsT=0,fpsShow=0;
-function fase(){var c=document.getElementById('cover');if(c&&!c.hidden)return 'sampul';var a=document.querySelector('.pg.on');return a?a.id:'-';}
+function fase(){var c=document.getElementById('cover');if(c&&!c.hidden){var k=c.classList;return k.contains('s-diPintu')?'s.pintu':(k.contains('s-main')?(window.SAMPUL&&SAMPUL.waktu&&SAMPUL.waktu()>=10.4?'s.cat-air':'s.jalan'):(k.contains('s-jernih')?'s.jernih':'s.awal'));}var a=document.querySelector('.pg.on');return a?a.id:'-';}
 function tick(ts){
   if(last){var dt=ts-last;if(dt>0&&dt<3000){var f=fase(),p=P[f];if(!p){p=P[f]={n:0,t:0,j:0,w:0};order.push(f);}
     p.n++;p.t+=dt;if(dt>33.4)p.j++;if(dt>p.w)p.w=dt;fpsN++;fpsT+=dt;if(fpsT>=500){fpsShow=Math.round(fpsN*1000/fpsT);fpsN=0;fpsT=0;}}}
   last=ts;requestAnimationFrame(tick);}
 requestAnimationFrame(tick);
-setInterval(function(){var s=info+'\nfps sekarang: '+fpsShow+'\n';
-  order.slice(-9).forEach(function(f){var p=P[f];s+=(f+'          ').slice(0,10)+' fps '+('  '+Math.round(p.n*1000/p.t)).slice(-3)+'  tersendat '+('  '+Math.round(100*p.j/p.n)).slice(-3)+'%  terburuk '+Math.round(p.w)+'ms\n';});
+setInterval(function(){var G=window.__GOV||{};var s=info+'\nmode: '+(G.m===1?'HEMAT':'PENUH')+' ('+(G.why||'')+')   fps: '+fpsShow+'\n';
+  order.slice(-18).forEach(function(f){var p=P[f];s+=(f+'          ').slice(0,10)+' fps '+('  '+Math.round(p.n*1000/p.t)).slice(-3)+'  tersendat '+('  '+Math.round(100*p.j/p.n)).slice(-3)+'%  terburuk '+Math.round(p.w)+'ms\n';});
   el.textContent=s;},500);
 })();
 </script>
