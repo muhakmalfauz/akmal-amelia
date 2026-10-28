@@ -1,27 +1,53 @@
 <!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
 <script>document.documentElement.classList.add("mewah")</script>
 <script>
-/* penyetel kecepatan otomatis: HP kuat tetap penuh (60 fps). Bila gambar tersendat atau HP terdeteksi lemah, beralih ke mode HEMAT:
-   gerak stabil 30 fps, efek kabur & kilau berat dimatikan. Tampilan tetap sama, hanya lebih ringan.
-   Uji manual: tambahkan ?mode=hemat atau ?mode=penuh di ujung alamat. */
-(function(){var de=document.documentElement,G=window.__GOV={m:0,why:'penuh',step:27,t:0,tc:0,dikunci:false,awal:0};
+/* penyetel kecepatan otomatis: tiap HP diukur sendiri. Gerak undangan dihitung tiap 1/60 dtk bila HP sanggup;
+   bila satu langkah gerak terlalu berat bagi prosesor HP itu, langkah dijarangkan (30, 20, 15, 12, 10 kali per detik)
+   sampai beban tinggal sekitar separuh, sehingga gambar tidak tersendat. HP lemah juga dapat mode HEMAT (efek kabur & kilau berat mati).
+   Uji manual: tambahkan ?mode=hemat atau ?mode=penuh di ujung alamat (penuh = tanpa penyesuaian). */
+(function(){var de=document.documentElement,G=window.__GOV={m:0,why:'penuh',t:0,tc:0,dikunci:false,awal:0,upd:0,mulaiT:0};
+var LV=[0,33.3,50,66.7,83.3,100],S=[0,1,2].map(function(){return {lv:0,C:0,n:0,up:0,dn:0,hv:0,r:[],skip:6,tl:0,ign:0};});
+G.S=S;G.LV=LV;
 function set(m,why){if(G.m===m)return;G.m=m;G.why=why;de.classList.toggle('hemat',m===1);}
 G.set=set;
 var q=/[?&]mode=(penuh|hemat)/.exec(location.search),paksa=q?q[1]:'';
-var mem=navigator.deviceMemory||8,inti=navigator.hardwareConcurrency||8,hemat=!!(navigator.connection&&navigator.connection.saveData);
-if(paksa==='hemat'){set(1,'dipaksa');G.dikunci=true;}
-else if(paksa==='penuh'){G.why='dipaksa penuh';G.dikunci=true;}
-else if(mem<=3||inti<=4||hemat)set(1,'HP lemah ('+mem+'GB, '+inti+' inti)');
-/* mulai mengukur 1,5 dtk setelah tamu menyentuh layar pertama kali (pemuatan awal tidak dihitung) */
+if(/[?&]uji=/.test(location.search))G.dbg=[];
+var mem=navigator.deviceMemory||8,inti=navigator.hardwareConcurrency||8,hemat=!!(navigator.connection&&navigator.connection.saveData),lv0=0;
+if(mem<=3||inti<=4||hemat)lv0=2;else if(mem<=4||inti<=6)lv0=1;
+if(paksa==='hemat'){set(1,'dipaksa');G.dikunci=true;lv0=2;}
+else if(paksa==='penuh'){G.why='dipaksa penuh';G.dikunci=true;lv0=0;}
+else if(lv0>=2)set(1,'HP lemah ('+mem+'GB, '+inti+' inti)');
+var ql=/[?&]lv=(\d)/.exec(location.search);if(ql){lv0=+ql[1];G.tetap=true;}
+S.forEach(function(x){x.lv=lv0;});
+/* selang minimum antar langkah gerak (ms) untuk konteks x: 0 diam, 1 bergerak (geser halaman), 2 sampul */
+G.selang=function(x){var v=LV[S[x].lv];return v?v-7:0;};
+/* mulai mengukur 1 dtk setelah tamu menyentuh layar pertama kali (pemuatan awal tidak dihitung) */
 addEventListener('pointerdown',function(){if(!G.awal)G.awal=performance.now();},{capture:true,passive:true});
 addEventListener('keydown',function(){if(!G.awal)G.awal=performance.now();},{capture:true,passive:true});
-var last=0,n=0,lambat=0,buruk=0;
-function tick(ts){
-  if(last&&G.m===0&&!G.dikunci&&G.awal&&ts-G.awal>1500&&!document.hidden){var dt=ts-last;
-    if(dt<250){n++;if(dt>30)lambat++;}
-    if(n>=60){if(lambat/n>.3)buruk++;else buruk=Math.max(0,buruk-1);n=0;lambat=0;if(buruk>=2)set(1,'tersendat');}}
-  last=ts;requestAnimationFrame(tick);}
-requestAnimationFrame(tick);
+/* biaya satu langkah gerak = waktu dari awal langkah sampai seluruh pekerjaan browser untuk bingkai itu selesai
+   (tugas pesan berikutnya baru jalan setelah bingkai selesai, termasuk penyusunan lapisan dan commit) */
+var mc=new MessageChannel(),pend=null;
+mc.port1.onmessage=function(){if(!pend)return;var now=performance.now(),c=now-pend.t0,x=pend.x;pend=null;
+  if(G.dbg)G.dbg.push([Math.round(now),x,Math.round(c*10)/10,S[x].lv]);
+  if(paksa==='penuh'||G.tetap||document.hidden||!G.awal||now-G.awal<1000)return;
+  var s=S[x];
+  if(now-s.tl>1500){s.skip=6;s.r.length=0;}   /* gerak baru mulai (gambar baru dimuat, bayangan baru dibuat): enam langkah pertama tidak dihitung */
+  s.tl=now;
+  if(s.skip>0){s.skip--;return;}
+  if(c>150){if(++s.ign<5)return;}else s.ign=0;   /* hentakan sesaat tidak dihitung, kecuali terus-menerus */
+  c=Math.min(c,150);
+  var r=s.r;r.push(c);if(r.length>15)r.shift();s.n++;
+  if(r.length<8)return;
+  var a=r.slice().sort(function(p,q){return p-q;}),C=a[Math.floor(a.length*.6)];s.C=C;   /* biaya tengah-atas: hentakan sesaat tidak ikut menentukan */
+  var need=0,low=0;
+  while(need<LV.length-1&&C>(LV[need]||16.7)*.62)need++;
+  while(low<LV.length-1&&C>(LV[low]||16.7)*.42)low++;
+  if(need>s.lv){s.dn=0;if(++s.up>=6){s.lv=C>(LV[s.lv]||16.7)*1.5?need:s.lv+1;s.up=0;}}   /* naik bertahap, kecuali beban jauh melampaui */
+  else if(low<s.lv){s.up=0;if(++s.dn>=20){s.lv=low;s.dn=0;}}
+  else{s.up=0;s.dn=0;}
+  /* mode HEMAT hanya bila gerak terus-menerus perlu dijarangkan (bukan hentakan sesaat) */
+  if(s.lv>=1){if(++s.hv>=70&&G.m===0&&!G.dikunci)set(1,'beban '+Math.round(s.C)+'ms');}else s.hv=0;};
+G.mulai=function(x,t0){G.upd++;G.rencana=LV[S[x].lv]||16.7;if(!pend){pend={t0:t0,x:x};mc.port2.postMessage(0);}};
 })();
 </script>
 <title>Undangan Akmal & Amelia</title>
@@ -167,7 +193,7 @@ html.sampul-hangat #stage{z-index:101;opacity:.003}
 .scene>img.pl{height:auto}
 /* satwa 3D: tiap bagian (sayap, badan) dipasang matrix3d oleh mesin SATWA */
 .sw{position:absolute;left:0;top:0;width:0;height:0;isolation:isolate;pointer-events:none}
-.sw>img{position:absolute;left:0;top:0;display:block;max-width:none;transform-origin:0 0;-webkit-user-drag:none;user-select:none;pointer-events:none}
+.sw>img{position:absolute;left:0;top:0;display:block;max-width:none;transform-origin:0 0;-webkit-user-drag:none;user-select:none;pointer-events:none;will-change:transform}
 #satwaTx{display:none}
 .scene>img[data-z],#teks[data-z],#fbTajam{will-change:transform;backface-visibility:hidden}
 .scene>img[data-pl]{will-change:transform;backface-visibility:hidden;transform-origin:0 0}
@@ -373,6 +399,10 @@ html.mewah .mp h3,html.mewah .nms{
 html.mewah .sapu{animation:kilau 6.8s cubic-bezier(.42,0,.28,1) both}
 html.hemat .sapu,html.hemat.mewah .sapu{animation:none!important}
 html.hemat .kerlip{display:none!important}
+html.hemat #musik .pir{animation:none}
+html.hemat #musik[aria-pressed="true"] .ikon i{animation:none;transform:scaleY(.8)}
+html.hemat #musik[aria-pressed="true"] .ikon i:nth-child(2){transform:scaleY(1)}
+html.hemat #musik[aria-pressed="true"] .ikon i:nth-child(3){transform:scaleY(.6)}
 @keyframes kilau{from{background-position:100% 0}to{background-position:0 0}}
 /* kerlip bintang kecil yang muncul sesaat di ujung huruf saat cahaya lewat */
 .kerlip{position:absolute;width:11px;height:11px;margin:-5.5px 0 0 -5.5px;pointer-events:none;z-index:3;opacity:0;
@@ -1056,7 +1086,7 @@ function pitaLipat(bw){var n=Math.max(8,Math.round(bw*DPR)),cv=D.createElement('
   for(var p=0;p<n;p+=P_){var gr=x.createLinearGradient(p,0,p+P_,0);gr.addColorStop(0,'rgba(80,52,26,.30)');gr.addColorStop(.5,'rgba(255,240,210,.10)');gr.addColorStop(1,'rgba(80,52,26,.30)');x.fillStyle=gr;x.fillRect(Math.floor(p),0,Math.ceil(P_)+1,1);}
   return cv;}
 function lukisTirai(buka,tp){var b=TB;if(!b||!AKIMG.naturalWidth)return;
-  var c=TC,Wn=AKIMG.naturalWidth,Hn=AKIMG.naturalHeight,NP=Math.max(NPITA,Math.min(260,Math.round(b.TH*DPR*.4)));   /* satu pita sekitar 2,5 piksel layar: lipatan kain tidak bergerigi */
+  var c=TC,Wn=AKIMG.naturalWidth,Hn=AKIMG.naturalHeight,NP=Math.max(NPITA,Math.min(window.__GOV.m===1?130:260,Math.round(b.TH*DPR*.4)));   /* satu pita sekitar 2,5 piksel layar: lipatan kain tidak bergerigi */
   c.setTransform(1,0,0,1,0,0);c.clearRect(0,0,tirai.width,tirai.height);c.setTransform(DPR,0,0,DPR,-b.x0*DPR,-b.cy0*DPR);
   for(var si=0;si<2;si++){var q1=si?b.cm-1:b.cx0,q2=si?b.cx1:b.cm+1,bw=q2-q1,sxs=(q1-b.ax)/b.aw*Wn,sws=bw/b.aw*Wn;
     for(var i=0;i<NP;i++){var y=(i+.5)/NP,ya=Math.round(i*b.TH*DPR/NP)/DPR,yb=i===NP-1?b.TH:Math.round((i+1)*b.TH*DPR/NP)/DPR,y0=b.cy0+ya,bh=yb-ya,   /* batas pita tepat di piksel: tanpa celah dan tanpa lapisan ganda */
@@ -1255,11 +1285,11 @@ var mulai=-1,T0=performance.now(),last=T0,TJ=-1,jeda=0,sembunyiT=0,habis=false,t
 function kabar(){return window.SAMPUL_HOOK||{};}
 function frame(now){if(habis)return;requestAnimationFrame(frame);
   if(sembunyiT)return;
-  if(window.__GOV.m===1){if(now-window.__GOV.tc<window.__GOV.step)return;window.__GOV.tc=now;}   /* mode hemat: 30 fps stabil */
-  var dtn=Math.min(.05,Math.max(.001,(now-last)/1000));last=now;
+  var G=window.__GOV;if(now-G.tc<G.selang(2))return;G.tc=now;G.mulai(2,performance.now());   /* langkah gerak dijarangkan bila HP berat */
+  var dtn=Math.min(.14,Math.max(.001,(now-last)/1000));last=now;
   var tt=(now-T0)/1000,tr=mulai<0?-1:(now-mulai-jeda)/1000;
   if(reduce&&tr>=0){jalanTenang(tr);return;}
-  var t=tr<0?-1:keNaskah(tr),dt=(t>=0&&tLalu>=0)?Math.min(.07,Math.max(.001,t-tLalu)):dtn;tLalu=t;
+  var t=tr<0?-1:keNaskah(tr),dt=(t>=0&&tLalu>=0)?Math.min(.24,Math.max(.001,t-tLalu)):dtn;tLalu=t;
   var tp=t<0?-1:t-OFS;TJ=tp;
   if(t>=0&&tp<12.9){var n=Math.max(1,Math.ceil(dt/(1/120)));for(var i=0;i<n;i++)langkahSim(tp-dt+dt*(i+1)/n,tt,dt/n);}
   gambar(t,tt,dtn);
@@ -1532,6 +1562,8 @@ window.SFX=(function(){
   var out=null,rev=null,rev2=null,nb=null,KS={},SMP={},GAIN=1.15,sudah={},pelSiap=true,TR=1,ultAir=0;
   var N={Bb1:58.27,Bb2:116.54,F3:174.61,Bb3:233.08,C4:261.63,D4:293.66,F4:349.23,G4:392,Bb4:466.16,C5:523.25,D5:587.33,F5:698.46,G5:783.99,Bb5:932.33,C6:1046.5,D6:1174.66,F6:1396.91,G6:1567.98,Bb6:1864.66};
   function boleh(){if(bisu||sDijeda||document.hidden)return false;if(started&&!sedangSampul)return lMain;return true;}
+  /* selubung gema dihitung tiap 32 sampel lalu diinterpolasi (bukan pow+exp tiap sampel): bunyi sama, ~3x lebih cepat */
+  function envGema(n,pd,sr,pw,tau){var S=32,m=Math.ceil((n-pd)/S)+2,E=new Float32Array(m);for(var j=0;j<m;j++){var k=j*S;E[j]=Math.pow(Math.max(0,1-k/n),pw)*(1-Math.exp(-k/(sr*tau)));}return {E:E,S:S};}
   function siap(){var c=ctx();if(!c)return null;if(out&&out.context===c)return c;
     muat(c);out=c.createGain();out.gain.value=GAIN;
     var lim=c.createDynamicsCompressor();lim.threshold.value=-6;lim.knee.value=10;lim.ratio.value=8;lim.attack.value=.004;lim.release.value=.3;
@@ -1539,19 +1571,23 @@ window.SFX=(function(){
     var sh=c.createWaveShaper(),cv=new Float32Array(2049);for(var q0=0;q0<2049;q0++){var xx=(q0-1024)/1024;cv[q0]=Math.tanh(1.3*xx)/Math.tanh(1.3);}sh.curve=cv;
     out.connect(lim);lim.connect(sh);sh.connect(window.SFX_BUS?SFX_BUS(c):c.destination);
     /* gema aula berkayu yang luas: jeda awal pendek, pantulan awal, ekor panjang yang makin gelap */
-    var sr=c.sampleRate,n=Math.floor(sr*3.6),ib=c.createBuffer(2,n,sr),pd=Math.floor(sr*.024);
+    var sr=c.sampleRate,n=Math.floor(sr*3.6),ib=c.createBuffer(2,n,sr),pd=Math.floor(sr*.024),E1=envGema(n,pd,sr,2.1,.03);
     for(var ch=0;ch<2;ch++){var d=ib.getChannelData(ch),y=0;
-      for(var i=pd;i<n;i++){var k=i-pd,a=.8-.7*(k/n);y+=((Math.random()*2-1)-y)*a;d[i]=y*Math.pow(1-k/n,2.1)*(1-Math.exp(-k/(sr*.03)));}
+      for(var k0=0,jj=0;k0<n-pd;k0+=E1.S,jj++){var e=E1.E[jj],de=(E1.E[jj+1]-e)/E1.S,ke=Math.min(E1.S,n-pd-k0);
+        for(var u=0;u<ke;u++){var k=k0+u,a=.8-.7*(k/n);y+=((Math.random()*2-1)-y)*a;d[pd+k]=y*e;e+=de;}}
       [.031,.047,.063,.089].forEach(function(e,j){var p=Math.floor(sr*(e+ch*.006));if(p<n)d[p]+=(j%2?-1:1)*.5/(j+1);});}
     var nn=c.sampleRate*3,nbf=c.createBuffer(1,nn,c.sampleRate),nd=nbf.getChannelData(0);for(var q=0;q<nn;q++)nd[q]=Math.random()*2-1;nb=nbf;KS={};
     rev=c.createConvolver();rev.buffer=ib;var rg=c.createGain();rg.gain.value=.7;rev.connect(rg);rg.connect(out);
     /* aula balairung yang jauh lebih besar (khusus lorong): jeda awal ~55 ms, pantulan awal lambat 90-300 ms bergantian kiri-kanan, ekor gelap 4,2 dtk.
        jeda awal + pantulan lambat itulah yang memberi kesan ruang luas; bunyi tidak jadi keruh karena ekornya cepat gelap */
-    var n2=Math.floor(sr*4.2),ib2=c.createBuffer(2,n2,sr),pd2=Math.floor(sr*.055);
-    for(var ch2=0;ch2<2;ch2++){var d2=ib2.getChannelData(ch2),y2=0;
-      for(var i2=pd2;i2<n2;i2++){var k2=i2-pd2,a2=.7-.62*(k2/n2);y2+=((Math.random()*2-1)-y2)*a2;d2[i2]=y2*Math.pow(1-k2/n2,2.3)*(1-Math.exp(-k2/(sr*.07)));}
-      [.092,.137,.185,.241,.298].forEach(function(e,j){var p2=Math.floor(sr*(e+ch2*.009));if(p2<n2)d2[p2]+=(j%2?-1:1)*.6/(j*.7+1);});}
-    rev2=c.createConvolver();rev2.buffer=ib2;var rg2=c.createGain();rg2.gain.value=.7;rev2.connect(rg2);rg2.connect(out);
+    var oc=out;   /* gema aula besar baru dihitung sesudah ketukan pertama (dipakai jauh kemudian; sebelum siap, suara memakai gema biasa) */
+    setTimeout(function(){try{
+      var n2=Math.floor(sr*4.2),ib2=c.createBuffer(2,n2,sr),pd2=Math.floor(sr*.055),E2=envGema(n2,pd2,sr,2.3,.07);
+      for(var ch2=0;ch2<2;ch2++){var d2=ib2.getChannelData(ch2),y2=0;
+        for(var k0=0,jj=0;k0<n2-pd2;k0+=E2.S,jj++){var e2=E2.E[jj],de2=(E2.E[jj+1]-e2)/E2.S,ke2=Math.min(E2.S,n2-pd2-k0);
+          for(var u=0;u<ke2;u++){var k2=k0+u,a2=.7-.62*(k2/n2);y2+=((Math.random()*2-1)-y2)*a2;d2[pd2+k2]=y2*e2;e2+=de2;}}
+        [.092,.137,.185,.241,.298].forEach(function(e,j){var p2=Math.floor(sr*(e+ch2*.009));if(p2<n2)d2[p2]+=(j%2?-1:1)*.6/(j*.7+1);});}
+      var r2=c.createConvolver();r2.buffer=ib2;var rg2=c.createGain();rg2.gain.value=.7;r2.connect(rg2);rg2.connect(oc);rev2=r2;}catch(e){}},700);
     return c;}
   /* kirim ke keluaran: wet = jumlah gema, pan = angka (-1..1) atau [dari,ke,detik] bila bergeser */
   function kirim(node,c,wet,pan,t,hall){var h=node;
@@ -1622,7 +1658,7 @@ window.SFX=(function(){
     var sr=c.sampleRate,n=Math.floor(sr*dur),p=Math.max(3,Math.round(sr/f-.5)),buf=c.createBuffer(1,n,sr),d=buf.getChannelData(0),r=new Float32Array(p),y=0,i;
     for(i=0;i<p;i++){y+=((Math.random()*2-1)-y)*.55;r[i]=y;}
     var m=0;for(i=0;i<p;i++)m=Math.max(m,Math.abs(r[i]));for(i=0;i<p;i++)r[i]/=m||1;
-    var ix=0;for(i=0;i<n;i++){var a=r[ix],b2=r[(ix+1)%p];r[ix]=(a+b2)*.5*redam;d[i]=a;ix=(ix+1)%p;}
+    var ix=0,ix1=1;for(i=0;i<n;i++){var a=r[ix],b2=r[ix1];r[ix]=(a+b2)*.5*redam;d[i]=a;ix=ix1;if(++ix1===p)ix1=0;}
     buf._f=sr/(p+.5);KS[key]=buf;return buf;}
   function senar(c,t,f,amp,dur,wet,pan,redam){var b=senarBuf(c,f,dur||3,redam||.9985),s=c.createBufferSource(),g=c.createGain();
     s.buffer=b;s.playbackRate.value=f/b._f;g.gain.setValueAtTime(amp,t);g.gain.setValueAtTime(amp,t+(dur||3)-.5);g.gain.linearRampToValueAtTime(0,t+(dur||3));
@@ -1938,6 +1974,7 @@ window.SFX=(function(){
     if(x<=0)v=0;else if(x<e[1])v=x/e[1];else if(x<e[1]+e[2])v=1;else if(x<e[1]+e[2]+e[3])v=1-(x-e[1]-e[2])/e[3];
     v=v*v*(3-2*v)*e[4];if(v>m)m=v;});return 1-m;}
   setTimeout(function(){try{var c=ctx();if(c)muat(c);}catch(e){}},900);
+  setTimeout(function(){try{if(!started)siap();}catch(e){}},2600);   /* gema ruangan disiapkan selagi layar pembuka diam, bukan di detik ketukan pertama */
   return {
     duck:duck,
     arah:function(tp,S){
@@ -2074,8 +2111,11 @@ function airMulai(){
       gl.uniform1i(airUni.S,0);gl.uniform1f(airUni.AL,0.);gl.uniform1f(airUni.IA,img.naturalWidth/img.naturalHeight);
       airGL=gl;kaburEl.appendChild(airCv);airUkur();addEventListener('resize',airUkur);
       airOn=true;airT0=performance.now();
+      var airSk=0,airHem=false;
       (function f(now){
         if(!airOn||kaburEl.style.display==='none'){airRaf=0;return;}
+        var GG=window.__GOV,fz=false;if(GG.m===1&&!airHem){airHem=true;airUkur();fz=true;}   /* ukuran kanvas berubah: bingkai ini wajib digambar (kanvas baru kosong) */
+        if(!fz&&(GG.m===1||!airAmp)&&(airSk^=1)){airRaf=requestAnimationFrame(f);return;}   /* menunggu ketukan atau HP berat: 30 gambar/dtk cukup untuk gelombang yang pelan */
         if(!document.hidden){
           airGL.uniform1f(airUni.T,reduceAir?3.:((now-airT0)/1000)%500);
           airGL.uniform2f(airUni.C,airC[0],airC[1]);airGL.uniform1f(airUni.RR,airRR);airGL.uniform1f(airUni.AM,airAmp);
@@ -2086,7 +2126,7 @@ function airMulai(){
   };
   img.src='aset/air_genangan.webp';
 }
-function airUkur(){if(!airCv)return;var w=cover.clientWidth,h=cover.clientHeight,s=Math.min(window.devicePixelRatio||1,1.6,820/w);
+function airUkur(){if(!airCv)return;var w=cover.clientWidth,h=cover.clientHeight,s=Math.min(window.devicePixelRatio||1,1.6,820/w);if(window.__GOV.m===1)s=Math.min(s,1);
   airCv.width=Math.max(2,Math.round(w*s));airCv.height=Math.max(2,Math.round(h*s));airGL.viewport(0,0,airCv.width,airCv.height);airGL.uniform2f(airUni.R,airCv.width,airCv.height);}
 function airBerhenti(){airOn=false;if(airRaf)cancelAnimationFrame(airRaf);airRaf=0;}
 airMulai();
@@ -2178,7 +2218,7 @@ function mulE(M,e11,e12,e13,e21,e22,e23){var a=M[0],b=M[1],c=M[2],d=M[3],e=M[4],
 /* kamera untuk bidang: maju cz + bergeser ex (memutari kedalaman zr) -> homografi tiap bidang -> matrix3d */
 var MM=[0,0,0,0,0,0,0,0,0],AWAN=0;
 /* AWAN: 0 = mega mendung tersembunyi, 1 = tampil (ikut kehadiran tulisan) */
-function kameraPl(k,cz,ex,t,ey){ey=ey||0;var C=CAM[k],v0=C.v[0],v1=C.v[1],zr=C.zr,L=ex*zr,Kx=zr?L/(zr-cz):0,LK=L+Kx*cz,Ly=ey*zr,Ky=zr?Ly/(zr-cz):0,LKy=Ly+Ky*cz,s=1/SCW;
+function kameraPl(k,cz,ex,t,ey){ey=ey||0;var TOL=window.__GOV.m===1?.12:.05,C=CAM[k],v0=C.v[0],v1=C.v[1],zr=C.zr,L=ex*zr,Kx=zr?L/(zr-cz):0,LK=L+Kx*cz,Ly=ey*zr,Ky=zr?Ly/(zr-cz):0,LKy=Ly+Ky*cz,s=1/SCW;
   for(var i=0;i<C.P.length;i++){var p=C.P[i];
     var a=p.A,b=p.B/2,c=p.C+p.A*v0+p.B*v1;
     var h11=1-a*LK,h12=-b*LK,h13=-L*c+Kx*(1-cz*c),h21=-a*LKy,h22=1-b*LKy,h23=-Ly*c+Ky*(1-cz*c),h31=-cz*a,h32=-cz*b,h33=1-cz*c;
@@ -2222,11 +2262,16 @@ function kameraPl(k,cz,ex,t,ey){ey=ey||0;var C=CAM[k],v0=C.v[0],v1=C.v[1],zr=C.z
     if(vis)continue;
     var os=o>.998?'':o.toFixed(3);if(os!==p.o){p.el.style.opacity=os;p.o=os;}
     var q=1/M[8];
-    var tr='matrix3d('+f6(M[0]*q)+','+f6(M[3]*q)+',0,'+f6(M[6]*q)+','+f6(M[1]*q)+','+f6(M[4]*q)+',0,'+f6(M[7]*q)+',0,0,1,0,'+f6(M[2]*q)+','+f6(M[5]*q)+',0,1)';
-    if(tr!==p.tr){p.el.style.transform=tr;p.tr=tr;}}}
+    /* tulis hanya bila sudut-sudut lapisan bergeser lebih dari TOL piksel */
+    var qa=M[0]*q,qb=M[3]*q,qp=M[6]*q,qc=M[1]*q,qd=M[4]*q,qr=M[7]*q,qe=M[2]*q,qf=M[5]*q,
+        w1=qp*Wl+1,w2=qr*Hl+1,w3=qp*Wl+qr*Hl+1,pc=p.pc,
+        cX1=(qa*Wl+qe)/w1,cY1=(qb*Wl+qf)/w1,cX2=(qc*Hl+qe)/w2,cY2=(qd*Hl+qf)/w2,cX3=(qa*Wl+qc*Hl+qe)/w3,cY3=(qb*Wl+qd*Hl+qf)/w3;
+    if(pc&&Math.abs(qe-pc[0])<TOL&&Math.abs(qf-pc[1])<TOL&&Math.abs(cX1-pc[2])<TOL&&Math.abs(cY1-pc[3])<TOL&&Math.abs(cX2-pc[4])<TOL&&Math.abs(cY2-pc[5])<TOL&&Math.abs(cX3-pc[6])<TOL&&Math.abs(cY3-pc[7])<TOL)continue;
+    var tr='matrix3d('+f6(qa)+','+f6(qb)+',0,'+f6(qp)+','+f6(qc)+','+f6(qd)+',0,'+f6(qr)+',0,0,1,0,'+f6(qe)+','+f6(qf)+',0,1)';
+    if(tr!==p.tr){p.el.style.transform=tr;p.tr=tr;p.pc=[qe,qf,cX1,cY1,cX2,cY2,cX3,cY3];}}}
 /* cz: kamera maju; ex: kamera bergeser ke samping (memutari bidang zr). Lapisan ber-jangkar (kaki pengantin)
    ikut membesar dari titik jangkarnya, jadi kaki tetap menapak di lantai panggung. */
-function kamera(k,cz,ex,ey){ey=ey||0;var C=CAM[k],vx=(C.v[0]-.5)*SCW,vy=(C.v[1]-.5)*SCH,zr=C.zr,zrr=zr?1/Math.max(zr-cz,.06):0;
+function kamera(k,cz,ex,ey){ey=ey||0;var TOL=window.__GOV.m===1?.12:.05,C=CAM[k],vx=(C.v[0]-.5)*SCW,vy=(C.v[1]-.5)*SCH,zr=C.zr,zrr=zr?1/Math.max(zr-cz,.06):0;
   for(var i=0;i<C.L.length;i++){var p=C.L[i],dz=p.z-cz,s=p.z/Math.max(dz,.06),o=dz<.06?0:1;
     if(p.fade)o*=1-sm(3,4.5,s);
     if(p.pop&&POP<1){o*=sm(0,.55,POP);s*=.86+.14*obk(POP);}
@@ -2237,8 +2282,9 @@ function kamera(k,cz,ex,ey){ey=ey||0;var C=CAM[k],vx=(C.v[0]-.5)*SCW,vy=(C.v[1]-
     if(p.an){var sa=p.az/Math.max(p.az-cz,.06),ax=(p.an[0]/100-.5)*SCW,ay=(p.an[1]/100-.5)*SCH;X+=(ax-vx)*(sa-s);Y+=(ay-vy)*(sa-s);}
     if(zr&&ex)X-=ex*zr*(1/Math.max(dz,.06)-zrr)*SCW;
     if(zr&&ey)Y-=ey*zr*(1/Math.max(dz,.06)-zrr)*SCW;
-    var tr='translate3d('+X.toFixed(2)+'px,'+Y.toFixed(2)+'px,0) scale('+s.toFixed(4)+')';
-    if(tr!==p.tr){p.el.style.transform=tr;p.tr=tr;}
+    if(!(p.pX!==undefined&&Math.abs(X-p.pX)<TOL&&Math.abs(Y-p.pY)<TOL&&Math.abs(s-p.pS)*SCW<TOL)){
+      var tr='translate3d('+X.toFixed(2)+'px,'+Y.toFixed(2)+'px,0) scale('+s.toFixed(4)+')';
+      if(tr!==p.tr){p.el.style.transform=tr;p.tr=tr;p.pX=X;p.pY=Y;p.pS=s;}}
     var os=o>.998?'':o.toFixed(3);if(os!==p.o){p.el.style.opacity=os;p.o=os;}}}
 /*SATWA*/
 /* ============ SATWA: kupu-kupu & merpati yang terbang bebas di dalam lukisan ============
@@ -2645,6 +2691,7 @@ var SATWA=(function(){
         zonaAcak(A,c,null);c.P=c.tgt.slice();zonaAcak(A,c,c.zona);}}
     if(H.burung){var B=H.burung;
       B.grup.forEach(function(cfg,gi){var G=grupBaru(A,B,gi,cfg);A.grup.push(G);G.ang.forEach(function(c){A.satwa.push(c);w.appendChild(c.el);});});}
+    var nM=0;A.satwa.forEach(function(c){if(c.jenis!=='kupu')c.rendah=(++nM>1);});   /* mode hemat: hanya satu merpati yang digambar */
     /* panaskan dulu supaya saat pertama tampil semuanya sudah di tempat yang wajar */
     for(var s=0;s<500;s++)langkah(A,.05);
     return A;}
@@ -2673,7 +2720,7 @@ var SATWA=(function(){
     return o;}
   var SATWA_K='gate';
   function gerak(k,cz,ex,t,ey){var A=AD[k];if(!A||!aktif)return;SATWA_K=k;
-    var dt=A.tl<0||t-A.tl>.5?1/60:t-A.tl;A.tl=t;dt=klm(dt,0,.05);
+    var dt=A.tl<0||t-A.tl>.5?1/60:t-A.tl;A.tl=t;dt=klm(dt,0,.16);
     if(dt>0)A.fps=kejar(A.fps,1/Math.max(dt,1/240),dt,1.5);
     if(!A.beku){var nsub=Math.ceil(dt/.02);for(var s=0;s<nsub;s++)langkah(A,dt/nsub);}
     setKam(k,cz,ex,ey);
@@ -2690,6 +2737,7 @@ var SATWA=(function(){
       if(o>.01){var X=CXp+SCW*(c.Pr[0]-LL)/w0,Y=CYp+SCW*(c.Pr[1]-LLy)/w0,r=SCW*c.span/w0*.75;
         if(LZc){var lzz=LZc.z;X=LZc.cx*SCW+(X-LZc.cx*SCW)*lzz;Y=LZc.cy*SCH+(Y-LZc.cy*SCH)*lzz;r*=lzz;}
         vis=X+r>mx-4&&X-r<mx+SW+4&&Y+r>my-4&&Y-r<my+SH+4?1:0;c.sx=X-mx;c.sy=Y-my;c.sr=r;}
+      if(vis&&c.rendah&&window.__GOV.m===1)vis=0;
       if(vis!==c.tampak){c.el.style.visibility=vis?'':'hidden';c.tampak=vis;}
       if(!vis)continue;
       var os=o>.995?'':o.toFixed(3);if(os!==c.op){c.el.style.opacity=os;c.op=os;}
@@ -2748,6 +2796,7 @@ function cl(x){return Math.max(0,Math.min(1,x));}
 
 /* ============ HALAMAN PER HALAMAN ============ */
 var pages=[].slice.call(document.querySelectorAll('.pg')),cur=0,busy=false,ready=false;
+pages.forEach(function(pg){pg.addEventListener('scroll',function(){pg.__sc=pg.scrollTop;},{passive:true});});
 var anim={from:0,to:0,t0:0,dur:1};
 pages.forEach(function(pg,i){var b=document.createElement('button');b.type='button';b.setAttribute('aria-label','Halaman '+(i+1));b.innerHTML='<i></i>';
   b.addEventListener('click',function(){go(i);});nav.appendChild(b);});
@@ -3056,11 +3105,12 @@ function k1(tt,d){return ez(cl(tt/d));}
 function frame(){
   requestAnimationFrame(frame);
   if(!pageVis||window.__sampulTutup)return;
-  if(window.__GOV.m===1){var _n=performance.now();if(_n-window.__GOV.t<window.__GOV.step)return;window.__GOV.t=_n;}   /* mode hemat: 30 fps stabil */
-  ptScPg=pages[cur]||null;ptSc=ptScPg?ptScPg.scrollTop:0;
+  var G=window.__GOV,n0=performance.now(),cx=(glide||dragging||Math.abs(PP-Math.round(PP))>1e-3)?1:0;
+  if(n0-G.t<G.selang(cx))return;G.t=n0;G.mulai(cx,n0);   /* langkah gerak dijarangkan bila HP berat */
+  ptScPg=pages[cur]||null;ptSc=ptScPg?(ptScPg.__sc||0):0;   /* posisi gulir dari cache (membaca scrollTop memaksa hitung ulang gaya) */
   ctrl(performance.now());
   var now=performance.now(),t=(now-t0)/1000,tt=(now-anim.t0)/1000;
-  var dtf=Math.min(.05,(now-lastNow)/1000);lastNow=now;
+  var dtf=Math.min(.16,(now-lastNow)/1000);lastNow=now;
   dragNow+=(dragT-dragNow)*(1-Math.exp(-dtf*(dragT?14:8)));
   var A=pages[anim.from].getAttribute('data-bg'),B=pages[anim.to].getAttribute('data-bg');
   var op={gate:0,couple:0,kapal:0,iring:0},cz={gate:0,couple:0,kapal:0,iring:0},ex={gate:0,couple:0,kapal:0,iring:0};
@@ -3231,13 +3281,26 @@ var ua=navigator.userAgent,
        ((/Android [^;)]*/.exec(ua)||['?'])[0])+'  '+((/SamsungBrowser\/[\d.]+|OPR\/[\d.]+|Chrome\/[\d.]+|Version\/[\d.]+/.exec(ua)||['?'])[0])+'\n'+((/;\s*([^;)]*)\sBuild/.exec(ua)||/;\s*([^;)]*)\)\s*AppleWebKit/.exec(ua)||[0,'?'])[1]),
   P={},order=[],last=0,fpsN=0,fpsT=0,fpsShow=0;
 function fase(){var c=document.getElementById('cover');if(c&&!c.hidden){var k=c.classList;return k.contains('s-diPintu')?'s.pintu':(k.contains('s-main')?(window.SAMPUL&&SAMPUL.waktu&&SAMPUL.waktu()>=10.4?'s.cat-air':'s.jalan'):(k.contains('s-jernih')?'s.jernih':'s.awal'));}var a=document.querySelector('.pg.on');return a?a.id:'-';}
+var lastU=-1,lastUT=0;
 function tick(ts){
-  if(last){var dt=ts-last;if(dt>0&&dt<3000){var f=fase(),p=P[f];if(!p){p=P[f]={n:0,t:0,j:0,w:0};order.push(f);}
+  var G=window.__GOV||{},f=fase(),p=P[f];if(!p){p=P[f]={n:0,t:0,j:0,w:0,un:0,ut:0,uj:0,uw:0};order.push(f);}
+  if(last){var dt=ts-last;if(dt>0&&dt<3000){
     p.n++;p.t+=dt;if(dt>33.4)p.j++;if(dt>p.w)p.w=dt;fpsN++;fpsT+=dt;if(fpsT>=500){fpsShow=Math.round(fpsN*1000/fpsT);fpsN=0;fpsT=0;}}}
+  /* langkah gerak sebenarnya: selang antar langkah; terlambat = lebih dari satu bingkai layar melewati rencana */
+  if(G.upd!==lastU){if(lastU>=0&&lastUT){var iv=ts-lastUT;if(iv<3000){p.un++;p.ut+=iv;if(iv>(G.rencana||16.7)+16.7)p.uj++;if(iv>p.uw)p.uw=iv;}}lastU=G.upd;lastUT=ts;}
   last=ts;requestAnimationFrame(tick);}
 requestAnimationFrame(tick);
-setInterval(function(){var G=window.__GOV||{};var s=info+'\nmode: '+(G.m===1?'HEMAT':'PENUH')+' ('+(G.why||'')+')   fps: '+fpsShow+'\n';
-  order.slice(-18).forEach(function(f){var p=P[f];s+=(f+'          ').slice(0,10)+' fps '+('  '+Math.round(p.n*1000/p.t)).slice(-3)+'  tersendat '+('  '+Math.round(100*p.j/p.n)).slice(-3)+'%  terburuk '+Math.round(p.w)+'ms\n';});
+var LA={};
+try{new PerformanceObserver(function(l){l.getEntries().forEach(function(e){var f=fase(),a=LA[f]||(LA[f]={n:0,d:0,k:0,r:0,g:0});a.n++;
+  if(e.duration>a.d){var st=e.startTime,rs=e.renderStart||st,gs=e.styleAndLayoutStart||rs;a.d=e.duration;a.k=Math.max(0,rs-st);a.r=Math.max(0,gs-rs);a.g=Math.max(0,st+e.duration-gs);}});}).observe({type:'long-animation-frame',buffered:true});}catch(_){}
+function laTeks(f){var a=LA[f];return a&&a.d>=50?'  L'+Math.round(a.d)+' k'+Math.round(a.k)+' r'+Math.round(a.r)+' g'+Math.round(a.g):'';}
+var u0=0,ut=performance.now(),upS=0;
+setInterval(function(){var G=window.__GOV||{},nw=performance.now();if(nw-ut>=1000){upS=Math.round((G.upd-u0)*1000/(nw-ut));u0=G.upd;ut=nw;}
+  var SS=G.S||[],ln=SS.map(function(x,i){return ['diam','geser','sampul'][i]+' '+(G.LV&&G.LV[x.lv]?Math.round(1000/G.LV[x.lv]):60)+'Hz beban '+Math.round(x.C)+'ms';}).join('  ');
+  var s=info+'\nmode: '+(G.m===1?'HEMAT':'PENUH')+' ('+(G.why||'')+')   fps: '+fpsShow+'  gerak: '+upS+'/dtk\n'+ln+'\n';
+  order.filter(function(f){return P[f].un>=8;}).slice(-17).forEach(function(f){var p=P[f];s+=(f+'          ').slice(0,10)+('   '+(p.t?Math.round(p.n*1000/p.t):0)).slice(-3)+'f '+('  '+Math.round(p.un*1000/p.ut)).slice(-2)+'g '+('  '+Math.round(100*p.uj/p.un)).slice(-3)+'%t '+('    '+Math.round(p.uw)).slice(-4)+'ms'+laTeks(f)+'\n';});
+  s+='f=gambar/dtk di layar  g=gerak/dtk  %t=gerak telat  ms=jeda terlama\n';
+  if(window.PerformanceObserver&&PerformanceObserver.supportedEntryTypes&&PerformanceObserver.supportedEntryTypes.indexOf('long-animation-frame')>=0)s+='L=bingkai terlama  k=kode  r=rAF  g=gaya/tata letak (ms)\n';
   el.textContent=s;},500);
 })();
 </script>
