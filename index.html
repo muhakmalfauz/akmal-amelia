@@ -6,8 +6,10 @@
    sampai beban tinggal sekitar separuh, sehingga gambar tidak tersendat. HP lemah juga dapat mode HEMAT (efek kabur & kilau berat mati).
    Uji manual: tambahkan ?mode=hemat atau ?mode=penuh di ujung alamat (penuh = tanpa penyesuaian). */
 (function(){var de=document.documentElement,G=window.__GOV={m:0,why:'penuh',t:0,tc:0,dikunci:false,awal:0,upd:0,mulaiT:0};
-var LV=[0,33.3,50,66.7,83.3,100],S=[0,1,2].map(function(){return {lv:0,C:0,n:0,up:0,dn:0,hv:0,r:[],skip:6,tl:0,ign:0,fl:0};});
-G.S=S;G.LV=LV;
+var V=16.67,LV=[0],S=[0,1,2].map(function(){return {lv:0,C:0,n:0,up:0,dn:0,hv:0,r:[],skip:6,tl:0,ign:0,fl:0,lt:0,iv:[]};});
+/* tingkat 1..7 = langkah gerak tiap 2..8 bingkai layar (V = selang bingkai layar, diukur; 16,67 ms = 60 Hz sampai terbukti lebih cepat) */
+function tabel(){LV.length=1;for(var i=1;i<=7;i++)LV.push(+((i+1)*V).toFixed(2));}tabel();
+G.S=S;G.LV=LV;G.V=V;
 function set(m,why){if(G.m===m)return;G.m=m;G.why=why;de.classList.toggle('hemat',m===1);}
 G.set=set;
 var q=/[?&]mode=(penuh|hemat)/.exec(location.search),paksa=q?q[1]:'';
@@ -20,7 +22,7 @@ else if(lv0>=2)set(1,'HP lemah ('+mem+'GB, '+inti+' inti)');
 var ql=/[?&]lv=(\d)/.exec(location.search);if(ql){lv0=+ql[1];G.tetap=true;}
 S.forEach(function(x){x.lv=lv0;});
 /* selang minimum antar langkah gerak (ms) untuk konteks x: 0 diam, 1 bergerak (geser halaman), 2 sampul */
-G.selang=function(x){var v=LV[S[x].lv];return v?v-7:0;};
+G.selang=function(x){var v=LV[S[x].lv];return v?v-Math.round(V*.42):0;};
 /* mulai mengukur 1 dtk setelah tamu menyentuh layar pertama kali (pemuatan awal tidak dihitung) */
 addEventListener('pointerdown',function(){if(!G.awal)G.awal=performance.now();},{capture:true,passive:true});
 addEventListener('keydown',function(){if(!G.awal)G.awal=performance.now();},{capture:true,passive:true});
@@ -29,7 +31,7 @@ addEventListener('keydown',function(){if(!G.awal)G.awal=performance.now();},{cap
 var mc=new MessageChannel(),pend=null;
 mc.port1.onmessage=function(){if(!pend)return;var now=performance.now(),c=now-pend.t0,x=pend.x;pend=null;
   if(G.dbg)G.dbg.push([Math.round(now),x,Math.round(c*10)/10,S[x].lv]);
-  if(paksa==='penuh'||G.tetap||document.hidden||!G.awal||now-G.awal<1000)return;
+  if(paksa==='penuh'||G.tetap||document.hidden||!G.awal||now-G.awal<1000||now<ir.hold)return;
   var s=S[x];
   if(now-s.tl>1500){s.skip=6;s.r.length=0;}   /* gerak baru mulai (gambar baru dimuat, bayangan baru dibuat): enam langkah pertama tidak dihitung */
   s.tl=now;
@@ -40,45 +42,72 @@ mc.port1.onmessage=function(){if(!pend)return;var now=performance.now(),c=now-pe
   if(r.length<8)return;
   var a=r.slice().sort(function(p,q){return p-q;}),C=a[Math.floor(a.length*.6)];s.C=C;   /* biaya tengah-atas: hentakan sesaat tidak ikut menentukan */
   var need=0,low=0;
-  while(need<LV.length-1&&C>(LV[need]||16.7)*.62)need++;
-  while(low<LV.length-1&&C>(LV[low]||16.7)*.42)low++;
-  if(need>s.lv){s.dn=0;if(++s.up>=6){s.lv=C>(LV[s.lv]||16.7)*1.5?need:s.lv+1;s.up=0;}}   /* naik bertahap, kecuali beban jauh melampaui */
+  while(need<LV.length-1&&C>(LV[need]||V)*.62)need++;
+  while(low<LV.length-1&&C>(LV[low]||V)*.42)low++;
+  if(need>s.lv){s.dn=0;
+    var cd=cadOK(x);
+    if(cd!==0)s.up=0;   /* langkah gerak sudah mantap & sesuai rencana (mis. 45/dtk di layar 90 Hz) atau datanya belum cukup: beban tinggi saja bukan alasan menjarangkan gerak */
+    else if(++s.up>=6){s.lv=C>(LV[s.lv]||V)*1.5?need:s.lv+1;s.up=0;}}   /* naik bertahap, kecuali beban jauh melampaui */
   else if(low<s.lv&&s.lv>s.fl){s.up=0;if(++s.dn>=20){s.lv=Math.max(low,s.fl);s.dn=0;}}
   else{s.up=0;s.dn=0;}
   /* mode HEMAT hanya bila gerak terus-menerus perlu dijarangkan (bukan hentakan sesaat) */
   if(s.lv>=1){if(++s.hv>=70&&G.m===0&&!G.dikunci)set(1,'beban '+Math.round(s.C)+'ms');}else s.hv=0;};
-G.mulai=function(x,t0){G.upd++;G.cx=x;G.rencana=LV[S[x].lv]||16.7;if(!pend){pend={t0:t0,x:x};mc.port2.postMessage(0);}};
+G.mulai=function(x,t0){G.upd++;G.cx=x;G.rencana=LV[S[x].lv]||V;
+  if(x){var s=S[x],d=t0-s.lt;s.lt=t0;if(t0<ir.hold){s.iv.length=0;d=0;}if(s.lp!==s.lv){s.lp=s.lv;s.iv.length=0;ir.iv.length=0;d=0;}   /* tingkat berubah: bukti irama dikumpulkan ulang */
+    if(d>0&&d<300){s.iv.push(d);if(s.iv.length>32)s.iv.shift();ir.iv.push([t0,d,x]);if(ir.iv.length>240)ir.iv.shift();}else s.iv.length=0;}
+  if(!pend){pend={t0:t0,x:x};mc.port2.postMessage(0);}};
 
-/* ---- v2: irama bingkai. Jarak antar-bingkai dibaca tiap detik; bila >12% waktu "hilang" (bingkai melar melewati 1,25x jarak normal)
-   selama 2 detik berturut-turut padahal tamu sedang melihat gerak, gerak dijarangkan satu tingkat dan mode hemat dinyalakan.
-   Tingkat 1: gerak 30 gambar/dtk mantap (lebih mulus dipandang daripada 41-53 gambar/dtk yang bergantian);
-   tingkat 2: mode HEMAT (efek kabur & kilau berat mati, kanvas lebih kecil);
-   tingkat 3: 20 gambar/dtk + mode SANGAT HEMAT (hiasan tipis dimatikan). Tak pernah naik lagi dalam sesi yang sama (hindari goyah). ?ir=0 mematikan. */
-var ir={last:0,w0:0,vs:[],base:99,bad:0,cool:0,step:0,share:0,mean:0,on:!/[?&]ir=0/.test(location.search)};
+/* ---- v3: irama gerak. Yang dinilai ialah selang antar-LANGKAH gerak (bukan selang rAF mentah) dalam jendela 1 dtk:
+   buruk bila TIDAK RATA (selang bergantian cepat-lambat; ukuran: simpangan rata-rata / rata-rata > 0,2) atau terlalu LAMBAT (< ±28 langkah/dtk).
+   Selang yang MANTAP (mis. 45 gambar/dtk di layar 90 Hz) tidak dianggap buruk: gambar mantap lebih nyaman dipandang daripada gerak yang dijarangkan.
+   Dua jendela buruk berturut-turut -> satu tindakan: (0) mode HEMAT, (1) gerak 30/dtk, (2) hiasan tipis dimatikan (+ 20/dtk hanya bila rata-rata < 25 langkah/dtk).
+   Tak pernah naik lagi dalam sesi yang sama (hindari goyah) kecuali G.reset() saat sampul selesai. ?ir=0 mematikan. */
+var ir={last:0,w0:0,vs:[],iv:[],bad:0,cool:0,step:0,share:0,mean:0,raw:0,hold:0,on:!/[?&]ir=0/.test(location.search)};
 G.ir=ir;
-function naikIrama(ts){
-  ir.cool=ts+3200;ir.bad=0;var parah=ir.share>.25;
+function num(p,q){return p-q;}
+/* simpangan rata-rata terhadap rata-rata, selang yang sangat panjang (hentakan tunggal) dipangkas pada 2,5x nilai tengah */
+function stat(a){var n=a.length;if(n<2)return null;var s=a.slice().sort(num),cap=s[n>>1]*2.5,t=0,i,b=new Array(n);
+  for(i=0;i<n;i++){b[i]=a[i]>cap?cap:a[i];t+=b[i];}
+  var mu=t/n,ad=0;for(i=0;i<n;i++)ad+=Math.abs(b[i]-mu);return {n:n,mu:mu,irr:ad/n/mu};}
+function planEff(lv){return lv?Math.ceil((LV[lv]-Math.round(V*.42))/V-.05)*V:0;}
+/* irama langkah konteks x: 1 = mantap & sesuai rencana, 0 = tidak, -1 = datanya belum cukup (kurang dari 12 selang) */
+function cadOK(x){var s=S[x];if(s.iv.length<12)return -1;var st=stat(s.iv.slice(-24));return (!!st&&st.irr<=.2&&st.mu<=Math.max(36,1.2*planEff(s.lv)))?1:0;}
+/* kecepatan layar: selang bingkai terkecil yang cukup sering muncul (>= 5% bingkai); hanya turun, tak pernah naik */
+var vh=[],vj=[],vn=0;for(var vi=0;vi<110;vi++){vh.push(0);vj.push(0);}
+function vsyncSampel(d){if(d<4||d>=50)return;var b0=Math.floor(d*2);vh[b0]++;vj[b0]+=d;vn++;
+  if(vn>=90&&vn%30===0){var th=Math.max(4,vn*.05);
+    for(var b=9;b<100;b++){var c=vh[b-1]+vh[b]+vh[b+1];if(c>=th){var v=(vj[b-1]+vj[b]+vj[b+1])/c;if(v<V*.93&&v>=6.5){V=+v.toFixed(2);G.V=V;tabel();}break;}}}}
+function naikIrama(ts,parah){
+  ir.cool=ts+3200;ir.bad=0;
   while(ir.step<3){var a=ir.step++,ok=false;
-    if(a===0){if(G.m===0&&!G.dikunci){set(1,'irama '+Math.round(1000/(ir.mean||30))+' fps');ok=true;}}
+    if(a===0){if(G.m===0&&!G.dikunci){set(1,'irama '+Math.round(1000/(ir.mean||30))+' langkah/dtk');ok=true;}}
     else if(a===1){[1,2].forEach(function(x){if(S[x].fl<1||S[x].lv<1)ok=true;S[x].fl=Math.max(S[x].fl,1);S[x].lv=Math.max(S[x].lv,1);});}
-    else{[1,2].forEach(function(x){S[x].fl=Math.max(S[x].fl,2);S[x].lv=Math.max(S[x].lv,2);});G.h2=1;de.classList.add('hemat2');ok=true;}
+    else{G.h2=1;de.classList.add('hemat2');ok=true;if(ir.mean>40)[1,2].forEach(function(x){S[x].fl=Math.max(S[x].fl,2);S[x].lv=Math.max(S[x].lv,2);});}
     if(G.dbg)G.dbg.push([Math.round(ts),'irama',a,Math.round(ir.share*100)]);
     if(ok&&!(parah&&a===0))return;}}
 function irama(ts){
   requestAnimationFrame(irama);
-  if(document.hidden){ir.last=0;ir.w0=0;ir.vs.length=0;return;}
-  if(ir.last){var d=ts-ir.last;if(d>0&&d<250)ir.vs.push(d);else if(d>=250){ir.vs.length=0;ir.w0=0;}}   /* henti panjang (tab disembunyikan, tugas panjang): jendela diulang */
+  if(document.hidden){ir.last=0;ir.w0=0;ir.vs.length=0;ir.iv.length=0;return;}
+  if(ir.last){var d=ts-ir.last;if(d>0&&d<250){ir.vs.push(d);vsyncSampel(d);}else if(d>=250){ir.vs.length=0;ir.w0=0;ir.iv.length=0;}}   /* henti panjang (tab disembunyikan, tugas panjang): jendela diulang */
   ir.last=ts;if(!ir.w0){ir.w0=ts;return;}
   if(ts-ir.w0<1000)return;
-  var v=ir.vs;ir.vs=[];ir.w0=ts;if(v.length<24)return;
-  var s=v.slice().sort(function(p,q){return p-q;}),p25=s[Math.floor(s.length*.25)];
-  if(p25<ir.base)ir.base=Math.max(p25,16.4);   /* layar 90/120 Hz tetap dinilai terhadap 60 gambar/dtk */
-  var tot=0,lost=0;for(var i=0;i<v.length;i++){tot+=v[i];if(v[i]>ir.base*1.25)lost+=Math.min(v[i]-ir.base,ir.base*3);}
-  ir.share=lost/tot;ir.mean=tot/v.length;
+  var v=ir.vs;ir.vs=[];ir.w0=ts;
+  var rt=0,i;for(i=0;i<v.length;i++)rt+=v[i];ir.raw=v.length?rt/v.length:0;
+  var now=performance.now(),cx=G.cx,a=[];
+  for(i=0;i<ir.iv.length;i++){var e=ir.iv[i];if(e[2]===cx&&e[0]>=now-1050)a.push(e[1]);}
+  var st=a.length>=10?stat(a):null;
+  if(st){ir.share=st.irr;ir.mean=st.mu;}
   if(G.dbg)G.dbg.push([Math.round(ts),'jendela',Math.round(ir.share*100),Math.round(ir.mean*10)/10]);
-  if(!ir.on||paksa==='penuh'||G.tetap||!G.awal||G.cx==null||G.cx===0||ts-G.awal<1500)return;
-  if(ir.share>.12){if(++ir.bad>=2&&ts>ir.cool&&ir.step<3)naikIrama(ts);}else ir.bad=0;}
+  if(!ir.on||paksa==='penuh'||G.tetap||!G.awal||cx==null||cx===0||ts-G.awal<1500||now<ir.hold||!st)return;
+  var bad=st.irr>.2||st.mu>Math.max(36,1.35*planEff(S[cx].lv));
+  if(bad){if(++ir.bad>=2&&ts>ir.cool&&ir.step<3)naikIrama(ts,st.irr>.45||st.mu>55);}else ir.bad=0;}
 requestAnimationFrame(irama);
+/* saat berat yang sudah diketahui (ketukan 1 & 2, pembukaan adegan): jangan dinilai */
+G.tahan=function(ms){ir.hold=performance.now()+ms;ir.bad=0;ir.iv.length=0;};
+/* sampul selesai: isi undangan jauh lebih ringan, nilai ulang dari awal (mode HEMAT yang sudah menyala tetap) */
+G.reset=function(){ir.step=0;ir.bad=0;ir.cool=0;ir.hold=performance.now()+1500;ir.share=0;ir.iv.length=0;
+  if(G.tetap)return;S.forEach(function(x){x.lv=lv0;x.fl=0;x.up=0;x.dn=0;x.hv=0;x.r.length=0;x.skip=6;x.iv.length=0;});
+  if(G.h2){G.h2=0;de.classList.remove('hemat2');}};
 })();
 </script>
 <title>Undangan Akmal & Amelia</title>
@@ -1090,27 +1119,36 @@ var OFS=1.7,IW=1024,IH=1536,VX=.5,VY=.63,TIRAI=126,
 var BL=[].slice.call(B.querySelectorAll('.s-bl'));
 
 /* ===== balairung diratakan: lihat catatan di CSS .s-rata ===== */
-var GBI={},RT={cv:null,ok:false,on:false,gagal:false,t:0,plan:true,c0:.015};
+var GBI={},RT={cv:null,ok:false,on:false,gagal:false,t:0,plan:true,c0:.015,gen:0};
 function bangunRata(){
   if(RT.ok||RT.gagal||reduce||mulai>=0||B.classList.contains('s-riakan')||B.classList.contains('s-jernih'))return;
   var w=LWID,h=LHGT;if(!w||!h)return;
-  try{
-    var im=[],i;for(i=0;i<LAP.length;i++){var g=GBI['aset/bl_l'+(LAP.length-1-i)+'.webp'];if(!g||!g.naturalWidth)return;im.push(g);}
-    var dp=Math.min(window.devicePixelRatio||1,2.6),cv=RT.cv||(RT.cv=D.createElement('canvas'));
-    cv.className='s-rata';cv.setAttribute('aria-hidden','true');cv.width=Math.round(w*dp);cv.height=Math.round(h*dp);
-    var x=cv.getContext('2d',{alpha:false});if(!x)throw 0;
-    x.setTransform(dp,0,0,dp,0,0);
-    x.fillStyle='#1d130a';x.fillRect(0,0,w,h);
-    x.save();x.translate(w*.5,h*.52);x.scale(w*.7,h*.46);
-    var g1=x.createRadialGradient(0,0,0,0,0,1);[[0,'#FFF4DA'],[.18,'#F4D79B'],[.38,'#D9A456'],[.64,'#8a5524'],[.88,'#3a2412'],[1,'#1d130a']].forEach(function(q){g1.addColorStop(q[0],q[1]);});
-    x.fillStyle=g1;x.fillRect(-4,-4,8,8);x.restore();
-    var g2=x.createLinearGradient(0,0,0,h);g2.addColorStop(.55,'rgba(190,150,100,0)');g2.addColorStop(.8,'rgba(196,156,106,.9)');g2.addColorStop(1,'rgb(176,136,90)');
-    x.fillStyle=g2;x.fillRect(0,0,w,h);
-    var sc=h/IH,x0=(w-IW*sc)/2,vpx=x0+VX*IW*sc,vpy=VY*h,c=RT.c0;
-    for(i=0;i<LAP.length;i++){var L=LAP[i],k=L.D/(L.D-c),bx=x0+L.b[0]*sc,by=L.b[1]*sc;
-      x.drawImage(im[i],vpx+(bx-vpx)*k,vpy+(by-vpy)*k,L.b[2]*sc*k,L.b[3]*sc*k);}
-    RT.ok=true;
-  }catch(e){RT.gagal=true;}
+  var im=[],i;for(i=0;i<LAP.length;i++){var g=GBI['aset/bl_l'+(LAP.length-1-i)+'.webp'];if(!g||!g.naturalWidth)return;im.push(g);}
+  var gen=++RT.gen,dp=Math.min(window.devicePixelRatio||1,2.6),cv=RT.cv||(RT.cv=D.createElement('canvas')),x=null;
+  /* disusun bertahap (satu lapisan per tugas) agar layar tidak membeku; berhenti bila sampul sudah disentuh, ukuran berubah, atau ada penyusunan baru */
+  function lanjut(k){
+    if(gen!==RT.gen)return;
+    if(RT.ok||RT.gagal||mulai>=0||B.classList.contains('s-riakan')||B.classList.contains('s-jernih')){if(!RT.ok&&RT.cv===cv)RT.cv=null;return;}
+    try{
+      if(k===0){
+        cv.className='s-rata';cv.setAttribute('aria-hidden','true');cv.width=Math.round(w*dp);cv.height=Math.round(h*dp);
+        x=cv.getContext('2d',{alpha:false});if(!x)throw 0;
+        x.setTransform(dp,0,0,dp,0,0);
+        x.fillStyle='#1d130a';x.fillRect(0,0,w,h);
+        x.save();x.translate(w*.5,h*.52);x.scale(w*.7,h*.46);
+        var g1=x.createRadialGradient(0,0,0,0,0,1);[[0,'#FFF4DA'],[.18,'#F4D79B'],[.38,'#D9A456'],[.64,'#8a5524'],[.88,'#3a2412'],[1,'#1d130a']].forEach(function(q){g1.addColorStop(q[0],q[1]);});
+        x.fillStyle=g1;x.fillRect(-4,-4,8,8);x.restore();
+        var g2=x.createLinearGradient(0,0,0,h);g2.addColorStop(.55,'rgba(190,150,100,0)');g2.addColorStop(.8,'rgba(196,156,106,.9)');g2.addColorStop(1,'rgb(176,136,90)');
+        x.fillStyle=g2;x.fillRect(0,0,w,h);
+      }else{
+        var sc=h/IH,x0=(w-IW*sc)/2,vpx=x0+VX*IW*sc,vpy=VY*h,c=RT.c0,L=LAP[k-1],kk=L.D/(L.D-c),bx=x0+L.b[0]*sc,by=L.b[1]*sc;
+        x.drawImage(im[k-1],vpx+(bx-vpx)*kk,vpy+(by-vpy)*kk,L.b[2]*sc*kk,L.b[3]*sc*kk);
+      }
+      if(k>=LAP.length){RT.ok=true;return;}
+    }catch(e){RT.gagal=true;return;}
+    setTimeout(function(){lanjut(k+1);},0);
+  }
+  lanjut(0);
 }
 function rataAktif(t){
   if(t>=0)return false;
@@ -1187,10 +1225,15 @@ function glTekstur(gl,unit){var tx=gl.createTexture();gl.activeTexture(gl.TEXTUR
   gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);return tx;}
 function idleNanti(f,t){(window.requestIdleCallback||function(g){setTimeout(g,200);})(f,{timeout:t||2000});}
 
-window.__GLU={dapat:glDapat,program:glProgram,tekstur:glTekstur};
+window.__GLU={dapat:glDapat,program:glProgram,tekstur:glTekstur,
+  bitmap:function(u,o,c){   /* gambar didekode di utas lain (fetch -> blob -> createImageBitmap): utas utama hampir tidak tersentuh; gagal -> pemanggil memakai jalur lama */
+    if(!window.createImageBitmap||!window.fetch)return Promise.reject(new Error('tak-ada'));
+    return fetch(u,c?{cache:c}:undefined).then(function(r){if(!r.ok)throw new Error('http');return r.blob();}).then(function(b){return createImageBitmap(b,o||{});});}};
 var TG={ok:false,gagal:false,cv:null,gl:null,u:null,n:0,dpr:1,bf:null},TIR=tirai;
-function tirGLsiap(){
-  if(TG.ok||TG.gagal||!TB||!AKIMG.naturalWidth)return;
+function tirGLsiap(cb){
+  cb=cb||function(){};
+  if(TG.ok||TG.gagal||TG.mulai||!TB||!AKIMG.naturalWidth){cb();return;}
+  TG.mulai=true;
   try{
     var cv=D.createElement('canvas');cv.className='s-tirai';cv.setAttribute('aria-hidden','true');
     var gl=glDapat(cv);if(!gl)throw new Error('gl');
@@ -1227,18 +1270,29 @@ function tirGLsiap(){
     var u={};['U','G1','G2','G3','S'].forEach(function(n){u[n]=gl.getUniformLocation(pr,n);});
     glTekstur(gl,0);
     gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);
-    gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL,true);
-    gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,AKIMG);
-    gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL,false);
-    if(gl.getError()!==gl.NO_ERROR)throw new Error('tekstur');
-    gl.uniform1i(u.S,0);
-    var bf=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,bf);gl.enableVertexAttribArray(0);gl.vertexAttribPointer(0,4,gl.FLOAT,false,0,0);
-    gl.enable(gl.BLEND);gl.blendFunc(gl.ONE,gl.ONE_MINUS_SRC_ALPHA);gl.clearColor(0,0,0,0);
-    TG.cv=cv;TG.gl=gl;TG.u=u;TG.bf=bf;
-    cv.addEventListener('webglcontextlost',function(e){e.preventDefault();tirGLbatal();},false);
-    tirai.parentNode.insertBefore(cv,tirai.nextSibling);
-    TG.ok=true;tirGLukur();tirGLlukis(.0001,0);
-  }catch(e){tirGLbatal();}}
+    /* unggah tekstur di tugas berikutnya; gambar didekode di belakang layar (ImageBitmap berprakali-alfa), bukan di utas utama */
+    function selesai(src){
+      try{
+        if(TG.gagal||habis){cb();return;}
+        gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL,true);   /* untuk ImageBitmap diabaikan: sudah berprakali-alfa */
+        gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,src);
+        gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL,false);
+        try{if(src!==AKIMG&&src.close)src.close();}catch(_){}
+        if(gl.getError()!==gl.NO_ERROR)throw new Error('tekstur');
+        gl.uniform1i(u.S,0);
+        var bf=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,bf);gl.enableVertexAttribArray(0);gl.vertexAttribPointer(0,4,gl.FLOAT,false,0,0);
+        gl.enable(gl.BLEND);gl.blendFunc(gl.ONE,gl.ONE_MINUS_SRC_ALPHA);gl.clearColor(0,0,0,0);
+        TG.cv=cv;TG.gl=gl;TG.u=u;TG.bf=bf;
+        cv.addEventListener('webglcontextlost',function(e){e.preventDefault();tirGLbatal();},false);
+        tirai.parentNode.insertBefore(cv,tirai.nextSibling);
+        TG.ok=true;tirGLukur();tirGLlukis(.0001,0);
+      }catch(e){tirGLbatal();}
+      cb();}
+    function cadangan(){
+      if(window.createImageBitmap)createImageBitmap(AKIMG,{premultiplyAlpha:'premultiply'}).then(function(b){setTimeout(function(){selesai(b);},0);},function(){setTimeout(function(){selesai(AKIMG);},0);});
+      else setTimeout(function(){selesai(AKIMG);},0);}
+    (window.__GLU&&window.__GLU.bitmap?window.__GLU.bitmap(AKIMG.currentSrc||AKIMG.src,{premultiplyAlpha:'premultiply'},'force-cache'):Promise.reject(0)).then(function(b){setTimeout(function(){selesai(b);},0);},cadangan);
+  }catch(e){tirGLbatal();cb();}}
 function tirGLbatal(){if(habis)return;TG.gagal=true;TG.ok=false;
   try{if(TG.cv&&TG.cv.parentNode)TG.cv.parentNode.removeChild(TG.cv);}catch(e){}
   TG.cv=null;TG.gl=null;
@@ -1347,7 +1401,7 @@ function letak(){var w=B.clientWidth,h=B.clientHeight;if(!w||!h)return;LWID=w;LH
   lapB.style.clipPath='inset('+cy0.toFixed(1)+'px '+(w-cx1).toFixed(1)+'px '+(h-cy1).toFixed(1)+'px '+cx0.toFixed(1)+'px)';
   for(var i=0;i<BL.length;i++){var L=LAP[i];BL[i].style.width=(L.b[2]*sc)+'px';BL[i].style.height=(L.b[3]*sc)+'px';}
   for(var nm in W)W[nm].V.forEach(function(V){V.ukur=-1;});
-  RT.ok=false;if(RT.on){RT.on=false;if(RT.cv)RT.cv.style.display='none';}clearTimeout(RT.t);if(!RT.gagal)RT.t=setTimeout(bangunRata,150);}
+  RT.ok=false;RT.gen++;if(RT.on){RT.on=false;if(RT.cv)RT.cv.style.display='none';}clearTimeout(RT.t);if(!RT.gagal)RT.t=setTimeout(bangunRata,150);}
 
 /* ===== LUNTUR CAT AIR (sama dengan transisi di undangan): medan noda dihitung sekali, tiap frame cukup tabel ===== */
 var lc=$s('sLuntur'),lx=lc.getContext('2d'),LW=200,LH=400,LIMG=lx.createImageData(LW,LH),LQ=null,LGR=null,
@@ -1581,8 +1635,8 @@ setTimeout(dimuat1,12000);     /* jaringan sangat lambat: sampul tetap ditampilk
 setTimeout(siapSemua,40000);
 /* hitung medan luntur & panaskan fungsi gambar saat sampul masih diam, agar frame pertama transisi tidak tersendat */
 idleNanti(function(){try{siapCairBertahap(function(){try{lunGLsiap();if(!LG.ok)lukisLuntur(1.3);}catch(e){}});}catch(e){}},3000);
-AKIMG.onload=function(){idleNanti(function(){try{tirGLsiap();}catch(e){}
-  try{if(!TG.ok&&TB){lukisTirai(.0001,0);TC.setTransform(1,0,0,1,0,0);TC.clearRect(0,0,tirai.width,tirai.height);tirai.__d=-1;}}catch(e){}},2500);};
+AKIMG.onload=function(){idleNanti(function(){try{tirGLsiap(function(){
+  try{if(!TG.ok&&TB){lukisTirai(.0001,0);TC.setTransform(1,0,0,1,0,0);TC.clearRect(0,0,tirai.width,tirai.height);tirai.__d=-1;}}catch(e){}});}catch(e){}},2500);};
 
 urut.forEach(buat);awal();letak();
 addEventListener('resize',function(){letak();});
@@ -2277,6 +2331,7 @@ function aturHint(){if(!hintEl)return;var S=window.SAMPUL,dimuat=cover.classList
   hintEl.classList.remove('s-muat');hintEl.textContent=!jernih?'Sentuh layar':((sentuhSampul&&!started)?'Ketuk lagi untuk membuka':'Ketuk untuk membuka');}
 function openCover(){
   if(started||!window.SAMPUL)return;
+  try{window.__GOV.tahan(2400);}catch(_){}
   try{DKX.lapis($('gateL'));DKX.lapis($('teks'));}catch(e){}   /* adegan pertama & monogram diminta segera */
   ctx();if(!sMain&&!sDijeda)sampulMulai(true);
   laguSiap();
@@ -2325,12 +2380,16 @@ function kpBuat(root,sgn,lama,awal){
 var kpSemua=[kpBuat(cover.querySelector('#sKp'),1,1,true),kpBuat(cover.querySelector('#sKp2'),-1,1.18)],kpTunda=[0,320];
 function kpGerak(m){kpArah=Math.random()<.5?-1:1;kpSemua.forEach(function(f,i){setTimeout(function(){f(m);},kpTunda[i]);});}
 /* ----- genangan air (WebGL): gambar air dibelokkan oleh ombak, riak, kilau; riak sentuhan ikut membelokkan ----- */
-var airCv=null,airGL=null,airUni={},airRaf=0,airT0=0,airOn=false,airC=[.5,.6],airRR=0,airAmp=0;window.__GLS=window.__GLS||{};__GLS.air=function(){return airGL?1:0;};
+var airCv=null,airGL=null,airUni={},airRaf=0,airT0=0,airOn=false,airC=[.5,.6],airRR=0,airAmp=0;window.__GLS=window.__GLS||{};__GLS.air=function(){return airGL?1:0;};__GLS.riak=function(){return airMD?1:0;};
+var airMD=false,airOP=1,airME=0,airM0=1,airR0=0,airMSa=new Float32Array(15),airRSa=new Float32Array(45),airGambar=null;
+/* gradien bertitik-henti -> jumlah tanjakan: nilai(d)=n0+sum(landai_i*clamp(d-mulai_i,0,lebar_i)); tanpa percabangan & tanpa pembagian di shader */
+function seg(a,F,K){F.fill(0);for(var i=0;i<a.length-1&&i<K;i++){var x=a[i][0],w=a[i+1][0]-x;F[i*3]=x;F[i*3+1]=w;F[i*3+2]=w>1e-7?(a[i+1][1]-a[i][1])/w:0;}return a[0][1];}
 var reduceAir=!!(window.matchMedia&&matchMedia('(prefers-reduced-motion:reduce)').matches);
 function airMulai(){
-  if(airCv)return;
+  if(airCv||airMulai.jalan)return;airMulai.jalan=true;
   var img=new Image();
-  img.onload=function(){
+  function awal(bm){
+    function mulaiGL(){
     try{
       airCv=document.createElement('canvas');airCv.className='s-air';
       var gl=/[?&]gl=0/.test(location.search)?null:airCv.getContext('webgl',{alpha:true,premultipliedAlpha:true,antialias:false,depth:false,stencil:false,powerPreference:'low-power'});
@@ -2373,41 +2432,99 @@ function airMulai(){
 ' float al=clamp(.24+.34*smoothstep(.40,.95,lum)+AL,0.,.96);',
 ' gl_FragColor=vec4(c*al,al);}'].join('\n');
       function sh(ty,src){var o=gl.createShader(ty);gl.shaderSource(o,src);gl.compileShader(o);if(!gl.getShaderParameter(o,gl.COMPILE_STATUS))throw new Error(gl.getShaderInfoLog(o));return o;}
-      var pr=gl.createProgram();gl.attachShader(pr,sh(gl.VERTEX_SHADER,vs));gl.attachShader(pr,sh(gl.FRAGMENT_SHADER,fs));gl.linkProgram(pr);
-      if(!gl.getProgramParameter(pr,gl.LINK_STATUS))throw new Error('link');
+      function buatPr(f){var p=gl.createProgram();gl.attachShader(p,sh(gl.VERTEX_SHADER,vs));gl.attachShader(p,sh(gl.FRAGMENT_SHADER,f));gl.linkProgram(p);
+        if(!gl.getProgramParameter(p,gl.LINK_STATUS))throw new Error('link');return p;}
+      /* shader komposit penuh (latar buram + topeng + cincin cahaya di dalam kanvas): sama dengan shader lama + ekor tambahan */
+      var rend='';try{var dbgi=gl.getExtension('WEBGL_debug_renderer_info');if(dbgi)rend=String(gl.getParameter(dbgi.UNMASKED_RENDERER_WEBGL)||'');}catch(_){}
+      var lunak=/swiftshader|llvmpipe|softpipe|software|basic render/i.test(rend);   /* grafis tiruan (CPU): jalur CSS lama lebih murah; ?riak=gl memaksa jalur baru (untuk uji) */
+      var bisaMD=!/[?&]riak=css/.test(location.search)&&(!lunak||/[?&]riak=gl/.test(location.search))&&!reduceAir&&(gl.getParameter(gl.MAX_FRAGMENT_UNIFORM_VECTORS)||0)>=64&&/url\(/.test(getComputedStyle(kaburEl).backgroundImage||''),pr=null;
+      if(bisaMD){try{
+        var fsB=fs.replace('uniform sampler2D S;uniform vec2 R,C;uniform float T,IA,AM,RR,AL;',function(){return 'uniform sampler2D S,S2;uniform vec2 R,C;uniform float T,IA,AM,RR,AL,MD,OP,BA,ME,M0,R0;uniform vec3 MS[5],RS[15];';})
+          .replace(' gl_FragColor=vec4(c*al,al);}',function(){return [
+' if(MD<.5){gl_FragColor=vec4(c*al,al);return;}',
+' vec2 bq=vec2((uv.x*ca-(ca-BA)*.5)/BA,uv.y);',
+' vec3 bg=vec3(.5922,.4471,.3059);',
+' if(bq.x>=0.&&bq.x<=1.)bg=texture2D(S2,bq).rgb;',
+' vec3 ee=c*al+bg*(1.-al);',
+' if(dq>=ME){gl_FragColor=vec4(ee*OP,OP);return;}',
+' float mA=M0,rA=R0;',
+' for(int mi=0;mi<5;mi++)mA+=MS[mi].z*clamp(dq-MS[mi].x,0.,MS[mi].y);',
+' for(int ri=0;ri<15;ri++)rA+=RS[ri].z*clamp(dq-RS[ri].x,0.,RS[ri].y);',
+' mA=clamp(mA,0.,1.);rA=clamp(rA,0.,1.);',
+' vec4 Kc=vec4(ee*mA,mA)*OP;vec4 Rc=vec4(vec3(1.,.97255,.90980)*rA,rA)*OP;',
+' gl_FragColor=Rc+Kc*(1.-Rc.a);}'].join('\n');});
+        pr=buatPr(fsB);}catch(e){pr=null;bisaMD=false;}}
+      if(!pr)pr=buatPr(fs);
       gl.useProgram(pr);var b=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,b);
       gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,1,-1,-1,1,1,1]),gl.STATIC_DRAW);
       var loc=gl.getAttribLocation(pr,'a');gl.enableVertexAttribArray(loc);gl.vertexAttribPointer(loc,2,gl.FLOAT,false,0,0);
       var tx=gl.createTexture();gl.bindTexture(gl.TEXTURE_2D,tx);
       gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);
       gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
-      gl.texImage2D(gl.TEXTURE_2D,0,gl.RGB,gl.RGB,gl.UNSIGNED_BYTE,img);
-      ['S','R','C','T','IA','AM','RR','AL'].forEach(function(n){airUni[n]=gl.getUniformLocation(pr,n);});
+      gl.texImage2D(gl.TEXTURE_2D,0,gl.RGB,gl.RGB,gl.UNSIGNED_BYTE,bm||img);try{if(bm&&bm.close)bm.close();}catch(_){}
+      ['S','R','C','T','IA','AM','RR','AL'].concat(bisaMD?['S2','MD','OP','BA','ME','M0','R0','MS','RS']:[]).forEach(function(n){airUni[n]=gl.getUniformLocation(pr,n);});
       gl.uniform1i(airUni.S,0);gl.uniform1f(airUni.AL,0.);gl.uniform1f(airUni.IA,img.naturalWidth/img.naturalHeight);
       airGL=gl;kaburEl.appendChild(airCv);airUkur();addEventListener('resize',airUkur);
       airOn=true;airT0=performance.now();
       var airSk=0,airHem=false;
+      airGambar=function(now){
+        airGL.uniform1f(airUni.T,reduceAir?3.:((now-airT0)/1000)%500);
+        airGL.uniform2f(airUni.C,airC[0],airC[1]);airGL.uniform1f(airUni.RR,airRR);airGL.uniform1f(airUni.AM,airAmp);
+        if(airMD){airGL.uniform1f(airUni.OP,airOP);airGL.uniform1f(airUni.ME,airME);airGL.uniform1f(airUni.M0,airM0);airGL.uniform1f(airUni.R0,airR0);airGL.uniform3fv(airUni.MS,airMSa);airGL.uniform3fv(airUni.RS,airRSa);}
+        airGL.drawArrays(airGL.TRIANGLE_STRIP,0,4);};
+      airCv.addEventListener('webglcontextlost',function(ev){try{ev.preventDefault();}catch(_){}if(airMD){airMD=false;kaburEl.style.background='';}try{airCv.style.display='none';}catch(_){}},false);   /* konteks hilang: latar buram CSS & jalur CSS kembali dipakai */
       (function f(now){
         if(!airOn||kaburEl.style.display==='none'){airRaf=0;return;}
         var GG=window.__GOV,fz=false;if(GG.m===1&&!airHem){airHem=true;airUkur();fz=true;}   /* ukuran kanvas berubah: bingkai ini wajib digambar (kanvas baru kosong) */
-        if(!fz&&(GG.m===1||!airAmp)&&(airSk^=1)){airRaf=requestAnimationFrame(f);return;}   /* menunggu ketukan atau HP berat: 30 gambar/dtk cukup untuk gelombang yang pelan */
-        if(!document.hidden){
-          airGL.uniform1f(airUni.T,reduceAir?3.:((now-airT0)/1000)%500);
-          airGL.uniform2f(airUni.C,airC[0],airC[1]);airGL.uniform1f(airUni.RR,airRR);airGL.uniform1f(airUni.AM,airAmp);
-          airGL.drawArrays(airGL.TRIANGLE_STRIP,0,4);}
+        if(!fz&&((GG.m===1&&!(airMD&&airAmp))||!airAmp)&&(airSk^=1)){airRaf=requestAnimationFrame(f);return;}   /* menunggu ketukan atau HP berat: 30 gambar/dtk cukup untuk gelombang yang pelan */
+        if(!document.hidden&&!(airMD&&riakJalan))airGambar(now);   /* riak jalan & kanvas memegang topeng/cincin: bingkai digambar oleh langkah() */
         if(reduceAir&&!airAmp){airRaf=0;return;}
         airRaf=requestAnimationFrame(f);})(airT0);
+      if(bisaMD)(function ambilBuram(){
+        var mm=/url\((["']?)(.*?)\1\)/.exec(getComputedStyle(kaburEl).backgroundImage||'');if(!mm)return;
+        var bi=new Image();
+        function pasang(src){
+            try{
+              if(riakJalan||jernih||!airOn||airGL!==gl)return;
+              gl.activeTexture(gl.TEXTURE1);var t2=gl.createTexture();gl.bindTexture(gl.TEXTURE_2D,t2);
+              gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);
+              gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
+              gl.texImage2D(gl.TEXTURE_2D,0,gl.RGB,gl.RGB,gl.UNSIGNED_BYTE,src);
+              gl.activeTexture(gl.TEXTURE0);
+              if(gl.getError()!==gl.NO_ERROR)throw new Error('tekstur2');
+              gl.uniform1i(airUni.S2,1);gl.uniform1f(airUni.BA,bi.naturalWidth/bi.naturalHeight);gl.uniform1f(airUni.MD,1);
+              gl.uniform1f(airUni.OP,1);gl.uniform1f(airUni.ME,0);gl.uniform1f(airUni.M0,1);gl.uniform1f(airUni.R0,0);
+              airMD=true;
+              gl.drawArrays(gl.TRIANGLE_STRIP,0,4);   /* kanvas kini membawa latar buram sendiri: satu bingkai penuh digambar SEKARANG, baru latar CSS dilepas (tanpa kedipan) */
+              var px=new Uint8Array(4);gl.readPixels(airCv.width>>1,(airCv.height*.35)|0,1,1,gl.RGBA,gl.UNSIGNED_BYTE,px);   /* uji piksel: hasil harus opak & cokelat keemasan; kalau tidak (pengemudi GPU aneh), jalur CSS lama dipakai */
+              if(px[3]<250||px[0]+px[1]+px[2]<60)throw new Error('uji piksel');
+              kaburEl.style.backgroundImage='none';   /* warna dasar #97724e tetap: lapisan opak penuh membuat adegan di belakangnya tidak digambar selagi menunggu ketukan */
+            }catch(err){airMD=false;try{gl.uniform1f(airUni.MD,0);}catch(_){}}
+            try{if(src&&src!==bi&&src.close)src.close();}catch(_){}
+          }
+        bi.onload=function(){if(window.createImageBitmap)createImageBitmap(bi).then(pasang,function(){pasang(bi);});else pasang(bi);};
+        (window.__GLU&&window.__GLU.bitmap?window.__GLU.bitmap(mm[2]):Promise.reject(0)).then(function(b){bi={naturalWidth:b.width,naturalHeight:b.height};pasang(b);},function(){bi.src=mm[2];});
+      })();
     }catch(err){try{if(airCv&&airCv.parentNode)airCv.parentNode.removeChild(airCv);}catch(_){}airCv=null;airOn=false;}
-  };
-  img.src='aset/air_genangan.webp';
+    }
+    if(bm){setTimeout(mulaiGL,0);return;}   /* jalur utama: bitmap sudah didekode di utas lain; pembuatan konteks & kompilasi shader di tugas berikutnya */
+    /* cadangan: elemen gambar */
+    if(window.createImageBitmap)createImageBitmap(img).then(function(b){bm=b;setTimeout(mulaiGL,0);},function(){setTimeout(mulaiGL,0);});
+    else setTimeout(mulaiGL,0);
+  }
+  img.onload=function(){awal(null);};
+  var AU='aset/air_genangan.webp';
+  (window.__GLU&&window.__GLU.bitmap?window.__GLU.bitmap(AU):Promise.reject(0)).then(function(b){img={naturalWidth:b.width,naturalHeight:b.height};awal(b);},function(){img.src=AU;});
 }
 function airUkur(){if(!airCv)return;var w=cover.clientWidth,h=cover.clientHeight,s=Math.min(window.devicePixelRatio||1,window.__GOV.m===1?.5:.7);
   airCv.width=Math.max(2,Math.round(w*s));airCv.height=Math.max(2,Math.round(h*s));airGL.viewport(0,0,airCv.width,airCv.height);airGL.uniform2f(airUni.R,airCv.width,airCv.height);}
 function airBerhenti(){airOn=false;if(airRaf)cancelAnimationFrame(airRaf);airRaf=0;}
 function mulaiRiak(e){
+  try{window.__GOV.tahan(2200);}catch(_){}
   try{window.SFX&&SFX.air&&SFX.air();}catch(_){}
   setTimeout(function(){kpGerak('ganggu');},160);
   riakJalan=true;hintEl.classList.add('s-jeda');cover.classList.add('s-riakan');
+  if(airMD)kaburEl.style.background='none';   /* kanvas yang memegang topeng: latar CSS dilepas supaya bagian dalam lingkaran riak bening */
   var r=cover.getBoundingClientRect(),W=r.width,H=r.height,x=W/2,y=H*.62;
   if(e&&typeof e.clientX==='number'&&(e.clientX||e.clientY)){x=e.clientX-r.left;y=e.clientY-r.top;}
   var sz=Math.min(W,H),Rmax=Math.hypot(Math.max(x,W-x),Math.max(y,H-y))+.14*sz+24,D=reduce?.01:3.4,t0=performance.now(),f=.08*sz;
@@ -2415,22 +2532,26 @@ function mulaiRiak(e){
     if(arr[0][0]>0)arr.unshift([0,0]);
     arr.forEach(function(q){var d=Math.max(q[0],prev+.5);prev=d;g.push('rgba('+rgb+','+(q[1]*maks).toFixed(3)+') '+d.toFixed(1)+'px');});
     return 'radial-gradient(circle at '+x.toFixed(1)+'px '+y.toFixed(1)+'px,'+g.join(',')+')';}
+  function pitaDat(arr){var prev=-1,g=[];
+    if(arr[0][0]>0)arr.unshift([0,0]);
+    arr.forEach(function(q){var d=Math.max(q[0],prev+.5);prev=d;g.push([d/H,q[1]]);});
+    return g;}
   function lukis(R,p){
     var amp=Math.pow(1-p,1.1)*Math.min(1,R/(.45*sz)),s=[],c=[];
     function T(a,d,v){if(d>=0)a.push([d,v]);}
     /* topeng kabur: 1 = masih buram, 0 = sudah jernih; di belakang pinggiran ada dua riak susulan yang pelan memudar */
     T(s,R-.52*sz,0);T(s,R-.34*sz,.1);T(s,R-.16*sz,.34);T(s,R,.62);T(s,R+f*1.4,1);
     airC=[x/W,y/H];airRR=R/H;airAmp=amp;
-    var m=pita(s,'0,0,0',1);kaburEl.style.webkitMaskImage=m;kaburEl.style.maskImage=m;
+    if(airMD){var ms=pitaDat(s);airM0=seg(ms,airMSa,5);airME=ms[ms.length-1][0];}else{var m=pita(s,'0,0,0',1);kaburEl.style.webkitMaskImage=m;kaburEl.style.maskImage=m;}
     /* cincin cahaya tipis di puncak gelombang + satu cincin pucat pada riak susulan */
     T(c,R-f*.7,0);T(c,R-f*.1,.2*(1-p*.5));T(c,R+f*.3,0);for(var k=1;k<=4;k++){var pk=R-k*.115*sz,al=.34*Math.pow(.62,k-1)*amp;T(c,pk-.03*sz,0);T(c,pk,al);T(c,pk+.03*sz,0);}
     var c2=[];T(c2,R-.21*sz-.02*sz,0);T(c2,R-.21*sz,.22*amp);T(c2,R-.21*sz+.02*sz,0);
     var merged=c.sort(function(a,b){return a[0]-b[0];});
-    cincinEl.style.background=pita(merged,'255,248,232',1);}
+    if(airMD){var rs=pitaDat(merged);airR0=seg(rs,airRSa,15);airME=Math.max(airME,rs[rs.length-1][0]);}else cincinEl.style.background=pita(merged,'255,248,232',1);}
   function langkah(now){var p=Math.max(0,Math.min(1,(now-t0)/(D*1000))),R=Rmax*(1-Math.pow(1-p,1.8)),pu=p<.68?0:(p-.68)/.32,op=1-pu*pu*(3-2*pu);
-    kaburEl.style.opacity=op.toFixed(3);cincinEl.style.opacity=op.toFixed(3);
+    airOP=op;if(!airMD){kaburEl.style.opacity=op.toFixed(3);cincinEl.style.opacity=op.toFixed(3);}
     if(p>=1){airBerhenti();kaburEl.style.display='none';cincinEl.style.display='none';jernih=true;riakJalan=false;hintEl.classList.remove('s-jeda');cover.classList.remove('s-riakan');cover.classList.add('s-jernih');aturHint();return;}
-    lukis(R,p);requestAnimationFrame(langkah);}
+    lukis(R,p);if(airMD&&airGambar&&!document.hidden){try{airGambar(now);}catch(_){}}requestAnimationFrame(langkah);}
   requestAnimationFrame(langkah);}
 function sentuhSampulFn(e){
   if(started)return;
@@ -2448,6 +2569,7 @@ window.SAMPUL_HOOK={
   zoom:function(){root.classList.remove('sampul-tutup');},
   hangat:function(on){root.classList.toggle('sampul-hangat',!!on);},
   selesai:function(){
+    try{window.__GOV.reset();}catch(_){}
     window.__sampulTutup=false;sedangSampul=false;
     introT=performance.now()-JD.tiba*1000;   /* undangan melanjutkan dari "pendopo tajam": fokus pindah, nama muncul */
     cover.hidden=true;window.scrollTo(0,0);
@@ -3614,18 +3736,32 @@ function tick(ts){
   last=ts;requestAnimationFrame(tick);}
 requestAnimationFrame(tick);
 var LA={};
-try{new PerformanceObserver(function(l){l.getEntries().forEach(function(e){var f=fase(),a=LA[f]||(LA[f]={n:0,d:0,k:0,r:0,g:0});a.n++;
-  if(e.duration>a.d){var st=e.startTime,rs=e.renderStart||st,gs=e.styleAndLayoutStart||rs;a.d=e.duration;a.k=Math.max(0,rs-st);a.r=Math.max(0,gs-rs);a.g=Math.max(0,st+e.duration-gs);}});}).observe({type:'long-animation-frame',buffered:true});}catch(_){}
+/* nama ringkas skrip penyebab bingkai panjang: pemanggil / nama fungsi (atau @posisi) / lama (ms) */
+function skrip(s){var iv=String(s.invoker||'').replace('TimerHandler:setTimeout','T').replace('TimerHandler:setInterval','TI').replace('IdleRequestCallback','idle').replace('FrameRequestCallback','rAF').replace(/^IMG\[src="aset\/([^"]*)"\]\.onload$/,'img.$1'),
+    fn=s.sourceFunctionName||'',lay=s.forcedStyleAndLayoutDuration>=12?' tata'+Math.round(s.forcedStyleAndLayoutDuration):'';
+  return (iv+(fn?'/'+fn:'')+(fn?'':'@'+s.sourceCharPosition)).slice(0,36)+' '+Math.round(s.duration)+lay;}
+try{new PerformanceObserver(function(l){l.getEntries().forEach(function(e){var f=fase(),a=LA[f]||(LA[f]={n:0,d:0,k:0,r:0,g:0,sc:'',t:0});a.n++;
+  if(e.duration>a.d){var st=e.startTime,rs=e.renderStart||st,gs=e.styleAndLayoutStart||rs;a.d=e.duration;a.k=Math.max(0,rs-st);a.r=Math.max(0,gs-rs);a.g=Math.max(0,st+e.duration-gs);a.t=st;
+    a.sc=(e.scripts||[]).slice().sort(function(p,q){return q.duration-p.duration;}).slice(0,2).map(skrip).join(' ; ');}});}).observe({type:'long-animation-frame',buffered:true});}catch(_){}
+/* kartu grafis (sekali, setelah pemuatan awal) dan jejak perubahan mode/tingkat gerak */
+var GPU='?';setTimeout(function(){try{var c=document.createElement('canvas'),g=c.getContext('webgl');if(!g){GPU='tanpa WebGL';return;}
+  var x=g.getExtension('WEBGL_debug_renderer_info'),n=x?g.getParameter(x.UNMASKED_RENDERER_WEBGL):g.getParameter(g.RENDERER),hp=g.getShaderPrecisionFormat(g.FRAGMENT_SHADER,g.HIGH_FLOAT);
+  GPU=String(n).replace(/^ANGLE \(/,'').replace(/\)$/,'').slice(0,44)+' hp'+(hp?hp.precision:'?');var e=g.getExtension('WEBGL_lose_context');if(e)e.loseContext();}catch(e){GPU='gagal';}},3500);
+var UB=[],ubK='';
+function ubahCek(){var G=window.__GOV||{},S=G.S||[],k=(G.m===1?'H':'P')+(G.h2?'2':'')+' '+S.map(function(x){return x.lv;}).join('');
+  if(k!==ubK){ubK=k;UB.push((performance.now()/1000).toFixed(1)+'s '+fase()+' '+k);if(UB.length>6)UB.shift();}}
 function laTeks(f){var a=LA[f];return a&&a.d>=50?'  L'+Math.round(a.d)+' k'+Math.round(a.k)+' r'+Math.round(a.r)+' g'+Math.round(a.g):'';}
-var GLS={};function glTeks(){if(/[?&]gl=0/.test(location.search))return 'gl: DIMATIKAN (?gl=0)';var g=window.__GLS||{};['tirai','luntur','dek','air'].forEach(function(k){var v=g[k]?g[k]():0;if(v===1)GLS[k]=1;else if(v===-1&&GLS[k]!==1)GLS[k]=-1;});
-  function t(v){return v===1?'ya':(v===-1?'GAGAL':'-');}return 'gl: tirai '+t(GLS.tirai)+'  luntur '+t(GLS.luntur)+'  dek '+t(GLS.dek)+'  air '+t(GLS.air);}
+var GLS={};function glTeks(){if(/[?&]gl=0/.test(location.search))return 'gl: DIMATIKAN (?gl=0)';var g=window.__GLS||{};['tirai','luntur','dek','air','riak'].forEach(function(k){var v=g[k]?g[k]():0;if(v===1)GLS[k]=1;else if(v===-1&&GLS[k]!==1)GLS[k]=-1;});
+  function t(v){return v===1?'ya':(v===-1?'GAGAL':'-');}return 'gl: tirai '+t(GLS.tirai)+'  luntur '+t(GLS.luntur)+'  dek '+t(GLS.dek)+'  air '+t(GLS.air)+'  riak '+t(GLS.riak);}
 var u0=0,ut=performance.now(),upS=0;
 setInterval(function(){var G=window.__GOV||{},nw=performance.now();if(nw-ut>=1000){upS=Math.round((G.upd-u0)*1000/(nw-ut));u0=G.upd;ut=nw;}
   var SS=G.S||[],ln=SS.map(function(x,i){return ['diam','geser','sampul'][i]+' '+(G.LV&&G.LV[x.lv]?Math.round(1000/G.LV[x.lv]):60)+'Hz beban '+Math.round(x.C)+'ms';}).join('  ');
-  var I=G.ir||{},s=info+'\nmode: '+(G.m===1?'HEMAT':'PENUH')+(G.h2?'+2':'')+' ('+(G.why||'')+')   fps: '+fpsShow+'  gerak: '+upS+'/dtk\n'+ln+'\nirama: langkah '+(I.step||0)+'  hilang '+Math.round((I.share||0)*100)+'%  selang '+(I.mean?I.mean.toFixed(1):'-')+'ms\n'+glTeks()+'\n';
-  order.filter(function(f){return P[f].un>=(f.charAt(1)==='.'?3:8);}).filter(function(f,i,A){return f.charAt(1)==='.'||A.length-i<=9;}).forEach(function(f){var p=P[f];s+=(f+'          ').slice(0,10)+('   '+(p.t?Math.round(p.n*1000/p.t):0)).slice(-3)+'f '+('  '+Math.round(p.un*1000/p.ut)).slice(-2)+'g '+('  '+Math.round(100*p.uj/p.un)).slice(-3)+'%t '+('    '+Math.round(p.uw)).slice(-4)+'ms'+laTeks(f)+'\n';});
+  var I=G.ir||{},s=info+'\nmode: '+(G.m===1?'HEMAT':'PENUH')+(G.h2?'+2':'')+' ('+(G.why||'')+')   fps: '+fpsShow+'  gerak: '+upS+'/dtk\n'+ln+'\nirama: langkah '+(I.step||0)+'  tak-rata '+Math.round((I.share||0)*100)+'%  selang '+(I.mean?I.mean.toFixed(1):'-')+'ms  layar '+(G.V?G.V.toFixed(1):'-')+'ms ('+Math.round(1000/(G.V||16.67))+'Hz)\n'+glTeks()+'\nGPU: '+GPU+'\n';ubahCek();
+  UB.slice(-4).forEach(function(u){s+='ubah> '+u+'\n';});
+  var TOP=Object.keys(LA).filter(function(f){return LA[f].d>=100&&LA[f].sc;}).sort(function(a,b){return LA[b].d-LA[a].d;}).slice(0,5);
+  order.filter(function(f){return P[f].un>=(f.charAt(1)==='.'?3:8);}).filter(function(f,i,A){return f.charAt(1)==='.'||A.length-i<=9;}).forEach(function(f){var p=P[f];s+=(f+'          ').slice(0,10)+('   '+(p.t?Math.round(p.n*1000/p.t):0)).slice(-3)+'f '+('  '+Math.round(p.un*1000/p.ut)).slice(-2)+'g '+('  '+Math.round(100*p.uj/p.un)).slice(-3)+'%t '+('    '+Math.round(p.uw)).slice(-4)+'ms'+laTeks(f)+'\n'+(TOP.indexOf(f)>=0?('  >@'+(LA[f].t/1000).toFixed(1)+'s '+LA[f].sc).slice(0,68)+'\n':'');});
   s+='f=gambar/dtk di layar  g=gerak/dtk  %t=gerak telat  ms=jeda terlama\n';
-  if(window.PerformanceObserver&&PerformanceObserver.supportedEntryTypes&&PerformanceObserver.supportedEntryTypes.indexOf('long-animation-frame')>=0)s+='L=bingkai terlama  k=kode  r=rAF  g=gaya/tata letak (ms)\n';
+  if(window.PerformanceObserver&&PerformanceObserver.supportedEntryTypes&&PerformanceObserver.supportedEntryTypes.indexOf('long-animation-frame')>=0)s+='L=bingkai terlama  k=kode  r=rAF  g=gaya/tata letak (ms)  >=skrip penyebab\n';
   el.textContent=s;},500);
 })();
 </script>
