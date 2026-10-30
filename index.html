@@ -1,5 +1,5 @@
 <!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
-<script>document.documentElement.classList.add("mewah")</script>
+<script>document.documentElement.classList.add("mewah");if(/[?&]pita=lama/.test(location.search))document.documentElement.classList.add("pita-lama");if(/[?&]kartu=lama/.test(location.search))document.documentElement.classList.add("kartu-lama")</script>
 <script>
 /* alat ukur awal (hanya ?uji=1): pewaktu bagian bingkai (b/t/e), pengamat tugas panjang, peristiwa sentuh, dan cat awal */
 (function(){if(!/[?&]uji(=|&|$)/.test(location.search))return;
@@ -199,6 +199,8 @@ html.hemat2 #cover .s-kabutLapis,html.hemat2 #cover .s-kabutL,html.hemat2 #cover
 #cover .s-kabutLapis i{position:absolute;left:-80%;top:0;width:260%;height:36%;background:url(aset/bl_asap.webp) 0 0/auto 100% repeat-x;transform-origin:50% 100%;will-change:transform,opacity;backface-visibility:hidden;opacity:0}
 #cover .s-kabutL{position:absolute;inset:-20%;pointer-events:none;opacity:0;will-change:transform,opacity;background:radial-gradient(ellipse 38% 16% at 30% 70%,rgba(255,240,210,.75),transparent 70%),radial-gradient(ellipse 42% 14% at 72% 62%,rgba(255,236,200,.7),transparent 70%),radial-gradient(ellipse 50% 20% at 50% 85%,rgba(255,238,205,.8),transparent 70%)}
 /* tulisan sampul: satu susunan di bagian langit-langit yang gelap, nama tamu menyatu di bawah tanggal */
+#cover canvas.s-redup{inset:auto;left:-60%;top:-60%;width:220%;height:220%;background:none}
+#cover canvas.s-kabutL{inset:auto;left:-20%;top:-20%;width:140%;height:140%;background:none}
 #cover .s-teduh{position:absolute;inset:0;pointer-events:none;will-change:opacity;background:linear-gradient(to bottom,rgba(16,9,4,.5) 0%,rgba(16,9,4,.34) 24%,rgba(16,9,4,.14) 40%,rgba(16,9,4,0) 54%)}
 #cover .s-isi{position:absolute;left:0;right:0;top:11cqh;display:flex;flex-direction:column;align-items:center;text-align:center;pointer-events:none;z-index:5;will-change:opacity}
 #cover .s-isi>*{margin:0;animation:s-naik 1.4s cubic-bezier(.22,.61,.36,1) both}
@@ -328,8 +330,9 @@ html.sampul-hangat #stage{z-index:101;opacity:.003}
 #swash{position:absolute;inset:0;z-index:3;pointer-events:none;opacity:0;background:radial-gradient(ellipse 80% 60% at 50% 45%,#fbf3e2,rgba(248,240,224,.85))}
 /* pita halimun: satu pita kabut yang selalu tepat di belakang tulisan, tingginya berubah halus saat pindah halaman */
 #pita{position:fixed;top:0;left:50%;width:var(--cw);height:100%;transform:translateX(-50%);z-index:1;pointer-events:none;overflow:hidden}
-#pita .pb{position:absolute;left:0;top:0;width:100%;height:0;visibility:hidden;--bp:15svh}
-#pita .kb,#pita .kw{position:absolute;inset:0;opacity:0;-webkit-mask-composite:source-in;mask-composite:intersect}
+#pita .pb{position:absolute;left:0;top:0;width:100%;height:0;visibility:hidden;--bp:15svh;will-change:transform}
+#pita .kb,#pita .kw{position:absolute;inset:0;opacity:0;-webkit-mask-composite:source-in;mask-composite:intersect;will-change:opacity}
+html.pita-lama #pita .pb,html.pita-lama #pita .kb,html.pita-lama #pita .kw{will-change:auto}
 #pita .kb{background:var(--ux-kabut,none) 0 0/420px 420px repeat,#F7F0E3;-webkit-mask-image:linear-gradient(to bottom,rgba(0,0,0,0) 0,rgba(0,0,0,.10) calc(var(--bp)*.25),rgba(0,0,0,.45) calc(var(--bp)*.5),rgba(0,0,0,.86) calc(var(--bp)*.75),#000 var(--bp),#000 calc(100% - var(--bp)),rgba(0,0,0,.86) calc(100% - var(--bp)*.75),rgba(0,0,0,.45) calc(100% - var(--bp)*.5),rgba(0,0,0,.10) calc(100% - var(--bp)*.25),rgba(0,0,0,0) 100%),linear-gradient(to right,rgba(0,0,0,.6),#000 24%,#000 76%,rgba(0,0,0,.6));mask-image:linear-gradient(to bottom,rgba(0,0,0,0) 0,rgba(0,0,0,.10) calc(var(--bp)*.25),rgba(0,0,0,.45) calc(var(--bp)*.5),rgba(0,0,0,.86) calc(var(--bp)*.75),#000 var(--bp),#000 calc(100% - var(--bp)),rgba(0,0,0,.86) calc(100% - var(--bp)*.75),rgba(0,0,0,.45) calc(100% - var(--bp)*.5),rgba(0,0,0,.10) calc(100% - var(--bp)*.25),rgba(0,0,0,0) 100%),linear-gradient(to right,rgba(0,0,0,.6),#000 24%,#000 76%,rgba(0,0,0,.6))}
 #pita .kw{background:var(--ux-kawung,none) 50% 0/46px auto repeat;-webkit-mask-image:linear-gradient(to bottom,rgba(0,0,0,0) 0,rgba(0,0,0,.10) calc(var(--bp)*.25),rgba(0,0,0,.45) calc(var(--bp)*.5),rgba(0,0,0,.86) calc(var(--bp)*.75),#000 var(--bp),#000 calc(100% - var(--bp)),rgba(0,0,0,.86) calc(100% - var(--bp)*.75),rgba(0,0,0,.45) calc(100% - var(--bp)*.5),rgba(0,0,0,.10) calc(100% - var(--bp)*.25),rgba(0,0,0,0) 100%),linear-gradient(to right,#000 0,#000 8%,transparent 34%,transparent 66%,#000 92%,#000 100%);mask-image:linear-gradient(to bottom,rgba(0,0,0,0) 0,rgba(0,0,0,.10) calc(var(--bp)*.25),rgba(0,0,0,.45) calc(var(--bp)*.5),rgba(0,0,0,.86) calc(var(--bp)*.75),#000 var(--bp),#000 calc(100% - var(--bp)),rgba(0,0,0,.86) calc(100% - var(--bp)*.75),rgba(0,0,0,.45) calc(100% - var(--bp)*.5),rgba(0,0,0,.10) calc(100% - var(--bp)*.25),rgba(0,0,0,0) 100%),linear-gradient(to right,#000 0,#000 8%,transparent 34%,transparent 66%,#000 92%,#000 100%)}
 #deck{position:fixed;top:0;left:50%;width:var(--cw);height:100%;transform:translateX(-50%);z-index:2}
@@ -338,6 +341,9 @@ html.sampul-hangat #stage{z-index:101;opacity:.003}
 .pg::-webkit-scrollbar{display:none}
 #deck.naik .pg:not(.on){transform:translate3d(0,-26px,0)}
 .pg.on{opacity:1;visibility:visible;transform:none;transition:opacity .8s cubic-bezier(.2,.7,.2,1) .4s,transform .9s cubic-bezier(.2,.7,.2,1) .4s,visibility 0s}
+/* v108: kartu & barisnya jadi lapisan sendiri selama halaman aktif (opacity/transform/kabur tidak lagi melukis ulang tulisan) */
+.pg.on .kartu,.pg.on .kartu>*{will-change:opacity,transform}
+html.kartu-lama .pg.on .kartu,html.kartu-lama .pg.on .kartu>*{will-change:auto}
 /* tulisan di tengah: titik tengahnya 47% tinggi layar; di pelaminan 43% agar wajah pengantin di bawah tetap bersih */
 .pg>.in{display:flex;flex-direction:column;justify-content:center;align-items:center;min-height:100%;padding:8svh 0 14svh;text-align:center}
 .pg[data-bg="couple"]>.in{padding:3svh 0 23svh}
@@ -1006,6 +1012,26 @@ html.pgGerak #jejak.on{opacity:0}
 var UJ=window.__UJ||null;   /* alat ukur (hanya ?uji=1) */
 var D=document,B=D.getElementById('cover');if(!B)return;
 function $s(i){return D.getElementById(i);}
+/* ===== v108: dua lapisan gradasi raksasa -> kanvas kecil (digambar sekali; GPU hanya menariknya) ===== */
+var KV={s:'-'};
+function kvElips(x,w,h,cx,cy,rx,ry,st){x.save();x.translate(cx*w,cy*h);x.scale(rx*w,ry*h);var g=x.createRadialGradient(0,0,0,0,0,1);
+  for(var i=0;i<st.length;i++)g.addColorStop(st[i][0],st[i][1]);x.fillStyle=g;x.fillRect(-12,-12,24,24);x.restore();}
+function kvGanti(id,w,h,lukis){var a=$s(id);if(!a||!a.parentNode)return false;
+  var c=D.createElement('canvas');c.width=w;c.height=h;var x=c.getContext('2d');if(!x)return false;
+  lukis(x,w,h);c.className=a.className;c.id=id;c.setAttribute('aria-hidden','true');a.parentNode.replaceChild(c,a);return true;}
+function kvPasang(){
+  if(/[?&]kv=css/.test(location.search)){KV.s='css';return;}
+  var n=0;
+  /* bayangan tepi: elips 22% x 19% di (50%,47%) kotak; transparan sampai 62%, lalu makin gelap sampai 100% dan seterusnya gelap rata */
+  if(kvGanti('sRedup',288,560,function(x,w,h){
+    kvElips(x,w,h,.5,.47,.22,.19,[[0,'rgba(24,14,6,0)'],[.62,'rgba(24,14,6,0)'],[.82,'rgba(24,14,6,.55)'],[1,'rgba(16,10,5,.86)']]);}))n++;
+  /* kabut cahaya: tiga elips terang bertumpuk (yang ke-3 paling bawah), masing-masing pudar sampai 70% jari-jari */
+  if(kvGanti('sKabutL',288,560,function(x,w,h){
+    var A=function(cx,cy,rx,ry,r){kvElips(x,w,h,cx,cy,rx,ry,[[0,r],[.7,r.replace(/,[.0-9]+\)$/,',0)')],[1,r.replace(/,[.0-9]+\)$/,',0)')]]);};
+    A(.5,.85,.5,.2,'rgba(255,238,205,.8)');A(.72,.62,.42,.14,'rgba(255,236,200,.7)');A(.3,.7,.38,.16,'rgba(255,240,210,.75)');}))n++;
+  KV.s=n===2?'kanvas':(n?'sebagian':'gagal');
+}
+try{kvPasang();}catch(e){KV.s='galat';}
 var P=$s('sPanggung'),BY=$s('sBayang'),isi=$s('sIsi'),tamu=$s('sTamu'),pentas=$s('sPentas'),akhir=$s('sAkhir'),redupP=$s('sRedup'),belakang=$s('sBelakang'),
     tirai=$s('sTirai'),lapB=$s('sLapB'),kabutL=$s('sKabutL'),gelap=$s('sGelap'),cahaya=$s('sCahaya'),adegan=$s('sAdegan'),
     daunL=$s('sDaunL'),daunR=$s('sDaunR'),monolog=$s('sMonolog'),mlLatar=$s('sMlLatar'),mlLangit=$s('sMlLangit'),mlKabut=$s('sMlKabut'),
@@ -1662,7 +1688,7 @@ var SP=window.SAMPUL={siap:false,t1:false,p1:0,p2:0,TT:TT,OFS:OFS,AKHIR:AKHIR,ny
     if(RT.on){GS.x=GS.y=0;setTimeout(bukaRata,170);}else RT.gagal=true;
     if(!cairSiap)try{siapCair();}catch(e){}},
   berjalan:function(){return mulai>=0&&!habis;},
-  waktu:function(){return TJ;},balaiHangat:function(){try{balaiHangat();}catch(e){}},hg:null};
+  waktu:function(){return TJ;},balaiHangat:function(){try{balaiHangat();}catch(e){}},hg:null,kv:KV};
 var pLama=-1;
 function kabarHint(){var p=Math.round(SP.p1*50+SP.p2*50);if(p===pLama)return;pLama=p;var K=kabar();if(K.hint)K.hint();}
 /* tahap 1 (gambar balairung, ±1 MB) -> sampul tampil & bisa disentuh; tahap 2 (sisa pertunjukan) menyusul di belakang layar */
@@ -3298,14 +3324,44 @@ function ptKe(n,ganti){var s=ptUkur(n),now=performance.now();
 function ptSegar(){var s=ptUkur(cur);if(!s||ptV('o',performance.now())<.02)return;['a','b'].forEach(function(q){tw(q,s[q],0,.35);});}
 window.ptSegar=ptSegar;
 var ptSc=0,ptScPg=null;   /* posisi gulir halaman dibaca di awal bingkai (sebelum gaya ditulis), agar tidak memaksa tata letak ulang tiap bingkai */
-function ptGambar(now){var o=ptV('o',now),vis=o>.003?'visible':'hidden';if(vis!==ptS.vis){pPb.style.visibility=vis;ptS.vis=vis;}if(o<=.003)return;
+/* ---- v108: satu pita per halaman (3 wadah bergilir); bentuk tetap, peralihan = pudar silang ---- */
+var PITA2=!/[?&]pita=lama/.test(location.search),PTI=[],PW=[];
+function ptWadah(el){return {el:el,kb:el.children[0],kw:el.children[1],pg:-1,g:null,o:0,t:0,vis:'hidden',s:{}};}
+PTI.push(ptWadah(pPb));
+if(PITA2){for(var pq=0;pq<2;pq++){var pc=pPb.cloneNode(true);pc.removeAttribute('style');pita.appendChild(pc);PTI.push(ptWadah(pc));}}
+function ptPasang(a,b){PW.length=0;if(a)PW.push(a);if(b)PW.push(b);}
+/* wadah milik halaman idx; bila belum ada, pakai wadah yang tidak diminta bingkai ini (paling pudar lebih dulu) */
+function ptCari(idx){var k,q,x,best=null;
+  for(k=0;k<PTI.length;k++)if(PTI[k].pg===idx)return PTI[k];
+  for(k=0;k<PTI.length;k++){x=PTI[k];for(q=0;q<PW.length;q++)if(PW[q][0]===x.pg)break;if(q<PW.length)continue;if(!best||x.o<best.o)best=x;}
+  if(best){best.pg=idx;best.g=null;}return best;}
+function ptGambar(now){
+  if(!PITA2){
+var o=ptV('o',now),vis=o>.003?'visible':'hidden';if(vis!==ptS.vis){pPb.style.visibility=vis;ptS.vis=vis;}if(o<=.003)return;
   var sc=pages[cur]===ptScPg?ptSc:(pages[cur]?pages[cur].scrollTop:0),a=ptV('a',now)-sc,b=ptV('b',now)-sc;
   var tr='translate3d(0,'+a.toFixed(1)+'px,0)';if(tr!==ptS.tr){pPb.style.transform=tr;ptS.tr=tr;}
   var h=Math.max(0,b-a).toFixed(1)+'px';if(h!==ptS.h){pPb.style.height=h;ptS.h=h;}
   var bp=Math.round(ptV('p',now))+'px';if(bp!==ptS.bp){pPb.style.setProperty('--bp',bp);ptS.bp=bp;}
   var o1=(o*ptV('m',now)).toFixed(3);if(o1!==ptS.o1){pKb.style.opacity=o1;ptS.o1=o1;}
   var o2=(o*ptV('k',now)).toFixed(3);if(o2!==ptS.o2){pKw.style.opacity=o2;ptS.o2=o2;}
-  var bgp='50% '+(-a).toFixed(1)+'px';if(bgp!==ptS.bgp){pKw.style.backgroundPosition=bgp;ptS.bgp=bgp;}}
+  var bgp='50% '+(-a).toFixed(1)+'px';if(bgp!==ptS.bgp){pKw.style.backgroundPosition=bgp;ptS.bgp=bgp;}
+    return;}
+  var k,q,x,o,X,g,s,pgx,da,db;
+  for(k=0;k<PTI.length;k++)PTI[k].t=0;
+  for(q=0;q<PW.length;q++){x=ptCari(PW[q][0]);if(x)x.t=PW[q][1];}
+  for(k=0;k<PTI.length;k++){x=PTI[k];o=x.t;x.o=o;X=x.pg>=0?R[x.pg]:null;
+    if(o<=.003||!X){if(x.vis!=='hidden'){x.el.style.visibility='hidden';x.vis='hidden';}continue;}
+    if(x.vis!=='visible'){x.el.style.visibility='visible';x.vis='visible';}
+    g=x.g;
+    if(!g||o<.02)g=x.g={a:X.a,b:X.b,p:X.p};
+    else{da=X.a-g.a;db=X.b-g.b;if(Math.abs(da)<.5&&Math.abs(db)<.5){g.a=X.a;g.b=X.b;}else{g.a+=da*.18;g.b+=db*.18;}g.p=X.p;}   /* isi berubah (huruf, dinding doa): tepi pita menyusul pelan */
+    pgx=pages[x.pg];s=x.s;
+    var tr='translate3d(0,'+(g.a-(pgx?(pgx.__sc||0):0)).toFixed(1)+'px,0)';if(tr!==s.tr){x.el.style.transform=tr;s.tr=tr;}
+    var h=Math.max(0,g.b-g.a).toFixed(1)+'px';if(h!==s.h){x.el.style.height=h;s.h=h;}
+    var bp=Math.round(g.p)+'px';if(bp!==s.bp){x.el.style.setProperty('--bp',bp);s.bp=bp;}
+    var o1=(o*X.m).toFixed(3);if(o1!==s.o1){x.kb.style.opacity=o1;s.o1=o1;}
+    var o2=(o*X.k).toFixed(3);if(o2!==s.o2){x.kw.style.opacity=o2;s.o2=o2;}
+    var bgp='50% '+(-g.a).toFixed(1)+'px';if(bgp!==s.bgp){x.kw.style.backgroundPosition=bgp;s.bgp=bgp;}}}
 if(document.fonts){try{document.fonts.ready.then(function(){ptSegar();});document.fonts.addEventListener('loadingdone',function(){ptSegar();});}catch(e){}}
 addEventListener('resize',function(){setTimeout(ptSegar,80);});
 function show(i,on){var pg=pages[i];
@@ -3533,11 +3589,32 @@ function masuk(k,g){var c=kartuOf(k);if(!c)return;gaya(c,'opacity','');gaya(c,'f
       if(x.tagName==='H2'||x.classList.contains('orn')){var ob=o>.999?'1':sm(.35,1,o).toFixed(3);if(x.__ob!==ob){x.style.setProperty('--ob',ob);x.__ob=ob;}}}});}
 var MEWAH=document.documentElement.classList.contains('mewah');
 function setPT(n,v){PT[n].v=v;PT[n].q.length=0;}
+var WM={on:false,sc:null,tk:null,cz:0,ex:0,done:{},idle:0,n:0,t1:0,lf:0,ms:{},aktif:!/[?&]adegan=lama/.test(location.search)},bacaOK={};
+window.__WM=WM;
+function hangatAdegan(now){
+  if(!WM.aktif||reduce)return;
+  var diam=ready&&introSelesai&&!glide&&!dragging&&MSK==null&&Math.abs(PP-Math.round(PP))<.002;
+  if(!diam){if(WM.on){WM.on=false;WM.sc=null;WM.tk=null;}WM.idle=0;return;}
+  var i=Math.round(PP);
+  if(!WM.on){
+    if(!WM.idle){WM.idle=now;return;}
+    if(now-WM.idle<800||D_hid())return;
+    var j=i+1;if(j>LAST)return;
+    var S=bgOf(j);if(S===bgOf(i)||WM.done[S]||!LY[S]||!bacaOK[S])return;
+    /* pose awal kemunculan yang sama dengan nanti: dari gerbang = (0,0), selain itu pose tiba */
+    var p1=pose(j),Z=CZ[S],jl=(bgOf(i)==='gate'&&S==='couple');
+    WM.on=true;WM.sc=S;WM.cz=jl?0:p1[0]+Z.arrive[0];WM.ex=jl?0:p1[1]+(EXA[S]||0);WM.tk=pages[j].getAttribute('data-txt')||null;WM.n=0;WM.t1=0;WM.lf=0;
+    return;}
+  if(!WM.t1){WM.t1=now;WM.lf=now;return;}
+  WM.n++;var gp=now-WM.lf;WM.lf=now;
+  if((WM.n>=3&&now-WM.t1>=120&&gp<24+(window.__GOV&&__GOV.selang?__GOV.selang(0):0))||now-WM.t1>900){WM.on=false;WM.done[WM.sc]=true;WM.ms[WM.sc]=now-WM.t1;WM.sc=null;WM.tk=null;}
+}
+function D_hid(){return document.hidden;}
 var bacaT={};
 function bacaAdegan(bg){var L=LY[bg];if(!L)return;var n=performance.now();if(bacaT[bg]&&n-bacaT[bg]<15000)return;bacaT[bg]=n;
   var ims=[].slice.call(L.querySelectorAll('img'));
   try{DKX.lapis(L);}catch(e){}   /* semua gambar adegan diminta bersamaan (unduhan sejajar), lalu didekode satu per satu */
-  (function satu(){var im=ims.shift();if(!im)return;var lanjut=function(){setTimeout(satu,20);};
+  (function satu(){var im=ims.shift();if(!im){bacaOK[bg]=true;return;}var lanjut=function(){setTimeout(satu,20);};
     try{DKX.muat(im).then(function(){if(im.decode)im.decode().then(lanjut,lanjut);else lanjut();});}catch(e){lanjut();}})();}
 function ctrl(now){if(!ready)return;jalanGlide(now);
   if(!R.length)ukurSemua();
@@ -3558,16 +3635,22 @@ function ctrl(now){if(!ready)return;jalanGlide(now);
   for(var k=0;k<NP;k++){var on=(k===i&&f<.999)||(k===j&&f>.001);if(pages[k].__on!==on){pages[k].classList.toggle('on',on);pages[k].__on=on;if(on)pages[k].scrollTop=0;}}
   keluar(i,sama?sm(0,.5,f):sm(0,.22,f));masuk(j,cl((f-(sama?.42:.8))/(1-(sama?.42:.8))));
   /* judul adegan muncul saat kamera tiba */
-  pages.forEach(function(pg,t){var id=pg.getAttribute('data-txt');if(!id)return;var o=1-sm(.1,.34,Math.abs(PP-t));gaya($(id),'opacity',o.toFixed(3));});
+  pages.forEach(function(pg,t){var id=pg.getAttribute('data-txt');if(!id)return;var o=1-sm(.1,.34,Math.abs(PP-t));if(WM.on&&WM.tk===id&&o<.002)o=.002;gaya($(id),'opacity',o.toFixed(3));});
   /* pelaminan: kamera naik ke gebyok mengikuti jari */
   var sk=function(x){return bgOf(x)==='couple'&&isiP(x)?1.5:1;},sc=bgOf(i)==='couple'&&bgOf(j)==='couple'?sk(i)+(sk(j)-sk(i))*ez(f):(bgOf(i)==='couple'?sk(i):(bgOf(j)==='couple'?sk(j):1));
   gaya(LY.couple,'transform',sc===1?'':'scale('+sc.toFixed(4)+')');
   /* pita halimun: berubah tinggi di adegan yang sama, larut saat adegan berganti */
   var Ri=R[i],Rj=R[j],X=null,o=0;
+  if(PITA2){   /* v108: pita halaman lama & baru pudar silang; bentuk masing-masing tetap */
+    if(Ri&&Rj&&sama){var e2=ez(f);ptPasang([i,1-e2],[j,e2]);o=1;}
+    else if(Ri&&f<.5){o=1-sm(0,.25,f);ptPasang([i,o]);}
+    else if(Rj){o=sama?sm(.45,.9,f):sm(.8,1,f);ptPasang([j,o]);}
+    else ptPasang(null);
+  }else{
   if(Ri&&Rj&&sama){var e2=ez(f);X={a:Ri.a+(Rj.a-Ri.a)*e2,b:Ri.b+(Rj.b-Ri.b)*e2,m:Ri.m+(Rj.m-Ri.m)*e2,k:Ri.k+(Rj.k-Ri.k)*e2,p:Rj.p};o=1;}
   else if(Ri&&f<.5){X=Ri;o=1-sm(0,.25,f);}
   else if(Rj){X=Rj;o=sama?sm(.45,.9,f):sm(.8,1,f);}
-  if(X){setPT('a',X.a);setPT('b',X.b);setPT('m',X.m);setPT('k',X.k);setPT('p',X.p);}setPT('o',o);
+  if(X){setPT('a',X.a);setPT('b',X.b);setPT('m',X.m);setPT('k',X.k);setPT('p',X.p);}setPT('o',o);}
   AWAN=o;   /* mega mendung hadir bersama tulisan */
   /* LUNTUR CAT AIR: lukisan lama luntur dari pinggir menjadi kertas krem, lalu lukisan baru mekar dari beberapa titik */
   var lo='hidden';
@@ -3617,7 +3700,7 @@ function frame(){
   requestAnimationFrame(frame);
   if(!pageVis||window.__sampulTutup)return;
   var G=window.__GOV,n0=performance.now(),cx=(glide||dragging||Math.abs(PP-Math.round(PP))>1e-3)?1:0;
-  if(n0-G.t<G.selang(cx))return;G.t=n0;G.mulai(cx,n0);var UJ=window.__UJ;if(UJ)UJ.b(arguments[0]);   /* langkah gerak dijarangkan bila HP berat */
+  if(n0-G.t<G.selang(cx))return;G.t=n0;G.mulai(cx,n0);var UJ=window.__UJ;if(UJ)UJ.b(arguments[0]);try{hangatAdegan(n0);}catch(_){}   /* langkah gerak dijarangkan bila HP berat */
   ptScPg=pages[cur]||null;ptSc=ptScPg?(ptScPg.__sc||0):0;   /* posisi gulir dari cache (membaca scrollTop memaksa hitung ulang gaya) */
   ctrl(performance.now());if(UJ)UJ.t('ctrl');
   var now=performance.now(),t=(now-t0)/1000,tt=(now-anim.t0)/1000;
@@ -3660,6 +3743,7 @@ function frame(){
     if(!reduce){var ke=k1(tt,1.25);cz[B]=P0[0]+(P1[0]-P0[0])*ke;ex[B]=P0[1]+(P1[1]-P0[1])*ke;}
     else{cz[B]=P1[0];ex[B]=P1[1];}}
   if(MSK==null)LENS.gate.on=false;
+  if(WM.on&&WM.sc&&WM.sc!==B&&op[WM.sc]<.0035){op[WM.sc]=.0035;cz[WM.sc]=WM.cz;ex[WM.sc]=WM.ex;}
   SAT_O.gate=MSK!=null?1-sm(.14,.33,MSK):1;SAT_O.couple=MSK!=null?sm(.92,1,MSK):1;
   /* pembukaan setelah sampul: lukisan pendopo tajam (tempat sampul berakhir) -> fokus pindah (latar buram) saat nama muncul */
   if(!introSelesai&&introT){
@@ -3832,6 +3916,9 @@ function awalTeks(){var m=UJ?UJ.m:null;if(!m)return '';function d(v){return v?(v
   return 'awal: FCP '+d(m.fcp)+'s  LCP '+d(m.lcp)+'s  sampul-siap '+d(m.t1)+'s  penuh '+d(m.t2)+'s\n';}
 function sfxTeks(){var d=window.SFX&&SFX.dbg?SFX.dbg():null;if(!d)return '';
   return 'suara: gema '+(d.rev?'ya':'-')+' aula '+(d.rev2?'ya':'-')+' derau '+(d.nb?'ya':'-')+'  siap '+n0(d.ms)+'ms irisan'+n0(d.mx)+' pasang'+n0(d.ak)+'\n';}
+function v108Teks(){var q=location.search,L=function(k){return new RegExp('[?&]'+k+'=lama').test(q)?'L':'B';},w=window.__WM,t='v108 pita '+L('pita')+' kartu '+L('kartu')+' kv '+(window.SAMPUL&&SAMPUL.kv?SAMPUL.kv.s:'-')+' adegan '+L('adegan');
+  if(w&&w.ms){var k=Object.keys(w.ms);if(k.length)t+=': '+k.map(function(x){return x.charAt(0)+n0(w.ms[x]);}).join(' ');}
+  return t+'\n';}
 function hgTeks(){var h=window.SAMPUL&&SAMPUL.hg;return h?'hangat: '+h.s+(h.n?' '+h.n+'bk '+n0(h.ms)+'ms':'')+'\n':'';}
 function jedaTeks(){if(!UJ)return '';var A=Object.keys(GP).map(function(f){return GP[f];}).filter(function(g){return g.d>=100;}).sort(function(x,y){return y.d-x.d;}).slice(0,4),s='';
   A.forEach(function(g){var lt=0,ev='';UJ.lt.forEach(function(q){var o=Math.min(g.b,q[0]+q[1])-Math.max(g.a,q[0]);if(o>0)lt+=o;});
@@ -3849,7 +3936,7 @@ function sentuhTeks(){if(!UJ||!UJ.ev.length)return '';var s='';
 var u0=0,ut=performance.now(),upS=0;
 setInterval(function(){var G=window.__GOV||{},nw=performance.now();if(nw-ut>=1000){upS=Math.round((G.upd-u0)*1000/(nw-ut));u0=G.upd;ut=nw;}
   var SS=G.S||[],ln=SS.map(function(x,i){return ['diam','geser','sampul'][i]+' '+(G.LV&&G.LV[x.lv]?Math.round(1000/G.LV[x.lv]):60)+'Hz beban '+Math.round(x.C)+'ms';}).join('  ');
-  var I=G.ir||{},s=info+'\nmode: '+(G.m===1?'HEMAT':'PENUH')+(G.h2?'+2':'')+' ('+(G.why||'')+')   fps: '+fpsShow+'  gerak: '+upS+'/dtk\n'+ln+'\nirama: langkah '+(I.step||0)+'  tak-rata '+Math.round((I.share||0)*100)+'%  selang '+(I.mean?I.mean.toFixed(1):'-')+'ms  layar '+(G.V?G.V.toFixed(1):'-')+'ms ('+Math.round(1000/(G.V||16.67))+'Hz)\n'+glTeks()+'\nGPU: '+GPU+heapTeks()+'\n'+awalTeks()+sfxTeks()+hgTeks();ubahCek();
+  var I=G.ir||{},s=info+'\nmode: '+(G.m===1?'HEMAT':'PENUH')+(G.h2?'+2':'')+' ('+(G.why||'')+')   fps: '+fpsShow+'  gerak: '+upS+'/dtk\n'+ln+'\nirama: langkah '+(I.step||0)+'  tak-rata '+Math.round((I.share||0)*100)+'%  selang '+(I.mean?I.mean.toFixed(1):'-')+'ms  layar '+(G.V?G.V.toFixed(1):'-')+'ms ('+Math.round(1000/(G.V||16.67))+'Hz)\n'+glTeks()+'\nGPU: '+GPU+heapTeks()+'\n'+awalTeks()+sfxTeks()+hgTeks()+v108Teks();ubahCek();
   UB.slice(-4).forEach(function(u){s+='ubah> '+u+'\n';});
   var TOP=Object.keys(LA).filter(function(f){return LA[f].d>=100&&LA[f].sc;}).sort(function(a,b){return LA[b].d-LA[a].d;}).slice(0,5);
   order.filter(function(f){return P[f].un>=(f.charAt(1)==='.'?3:8);}).filter(function(f,i,A){return f.charAt(1)==='.'||A.length-i<=9;}).forEach(function(f){var p=P[f];s+=(f+'          ').slice(0,10)+('   '+(p.t?Math.round(p.n*1000/p.t):0)).slice(-3)+'f '+('  '+Math.round(p.un*1000/p.ut)).slice(-2)+'g '+('  '+Math.round(100*p.uj/p.un)).slice(-3)+'%t '+('    '+Math.round(p.uw)).slice(-4)+'ms'+laTeks(f)+'\n'+(TOP.indexOf(f)>=0?('  >@'+(LA[f].t/1000).toFixed(1)+'s '+LA[f].sc).slice(0,68)+'\n':'');});
