@@ -494,6 +494,7 @@ select option{color:#2F3A2A}
 .seg label+label span{border-left:1px solid rgba(184,143,74,.45)}
 .seg input:checked+span{color:var(--ink);font-style:italic;text-decoration:underline;text-decoration-color:var(--gold);text-underline-offset:6px}
 .seg input:focus-visible+span{outline:1px solid var(--gold);outline-offset:2px}
+.jebakan{position:absolute!important;left:-9999px!important;width:1px;height:1px;opacity:0;pointer-events:none}
 .out{margin:16px auto 0;max-width:300px;font-family:var(--font-d);font-weight:600;font-size:17.5px;line-height:1.55;text-align:center;color:var(--teks)}
 .out .ok{margin:0;font-style:italic;font-weight:500;font-size:20px;color:var(--ink)}
 .out .kc{margin:10px 0 0}
@@ -1021,7 +1022,7 @@ html.pgGerak #jejak.on{opacity:0}
 <section class="pg" id="rsvp" data-bg="iring"><div class="in"><div class="kartu sec">
   <p class="eyebrow rv">RSVP</p>
   <h2 class="t rv d1">Konfirmasi Kehadiran</h2>
-  <form id="fRsvp" class="rv d2" autocomplete="off">
+  <form id="fRsvp" class="rv d2" autocomplete="off"><input class="jebakan" name="situs" tabindex="-1" autocomplete="off" aria-hidden="true">
     <label>Nama<input id="rNama" name="nama" required maxlength="60" placeholder="Nama Anda" autocomplete="name"></label>
     <div class="seg" role="radiogroup" aria-label="Kehadiran">
       <label><input type="radio" name="hadir" value="Hadir" checked><span>Hadir</span></label>
@@ -1041,7 +1042,7 @@ html.pgGerak #jejak.on{opacity:0}
 <section class="pg" id="ucapan" data-bg="iring"><div class="in"><div class="kartu sec">
   <p class="eyebrow rv">Buku Tamu</p>
   <h2 class="t rv d1">Untaian Doa</h2>
-  <form id="fUcap" class="rv d2" autocomplete="off">
+  <form id="fUcap" class="rv d2" autocomplete="off"><input class="jebakan" name="situs" tabindex="-1" autocomplete="off" aria-hidden="true">
     <label>Nama<input id="uNama" name="nama" required maxlength="60" placeholder="Nama Anda" autocomplete="name"></label>
     <label>Doa &amp; ucapan<textarea id="uPesan" name="pesan" required maxlength="400" placeholder="Tulis doa terbaik untuk kami"></textarea></label>
     <button class="btn" type="submit">Kirim Doa</button>
@@ -1976,6 +1977,7 @@ try{history.scrollRestoration='manual';}catch(e){}
 var DATA={
   hari:'2027-03-21T09:00:00+07:00',   /* akad pukul 09.00 WIB: dipakai hitung mundur & kalender */
   wa:'',   /* nomor WhatsApp penerima konfirmasi & doa, contoh: 6281234567890 */
+  sheet:'https://script.google.com/macros/s/AKfycbwYjUz1WbLW2M8fTPaDCLlnCVeL5JBZpRXC-hpcbxjvC5GtUuu9NmeU7GT3TJWO6TDn/exec',   /* v115: alamat Aplikasi Web Google Sheets (Apps Script, berakhiran /exec) untuk dinding doa & konfirmasi kehadiran */
   pria:{lengkap:'Muhammad Akmal Fauzi',ortu:'Putra pertama dari|Bapak Wastono|& Ibu Nurhikmah',ig:'muhakmalfauz'},
   wanita:{lengkap:'Amelia Karina',ortu:'Putri pertama dari|Bapak (Alm.) Kadiman|& Ibu Ida Rosdiana',ig:'amlkrn_'},
   tempat:'Kediaman Mempelai Wanita',
@@ -2047,24 +2049,68 @@ function kirim(outEl,msg,judul){
   else h+='<p class="kc">Salin pesan ini lalu kirimkan kepada kami:</p><pre>'+esc(msg)+'</pre><div class="btns"><button class="btn o" type="button" data-copy="'+esc(msg)+'">Salin Pesan</button></div>';
   outEl.innerHTML=h;outEl.hidden=false;if(window.ukurIsi)setTimeout(window.ukurIsi,40);
 }
+/* v115: Google Sheets (Apps Script). Kosong / gagal = cara lama. */
+var SHEET=String(DATA.sheet||'').trim();
+function keSheet(data){
+  var b=new URLSearchParams();Object.keys(data).forEach(function(k){b.append(k,data[k]==null?'':data[k]);});
+  var ac=window.AbortController?new AbortController():null,t=setTimeout(function(){if(ac)ac.abort();},20000);
+  return fetch(SHEET,{method:'POST',body:b,signal:ac?ac.signal:undefined})
+    .then(function(r){clearTimeout(t);return r.json();},function(x){clearTimeout(t);throw x;})
+    .then(function(j){if(!j||!j.ok)throw new Error((j&&j.pesan)||'gagal');return j;});
+}
+function tampilOut(outEl,h){outEl.innerHTML=h;outEl.hidden=false;if(window.ukurIsi)setTimeout(window.ukurIsi,40);}
+function jebakan(f){return (f.elements.situs&&f.elements.situs.value)||'';}
 $('fRsvp').addEventListener('submit',function(e){e.preventDefault();var f=e.target,nm=f.elements.nama.value.trim(),st=f.elements.hadir.value;if(!nm)return;
-  kirim($('rOut'),'Assalamu’alaikum, saya '+nm+'.\nKonfirmasi kehadiran di pernikahan Akmal & Amelia (Minggu, 21 Maret 2027): '+st+'.\nTerima kasih.',
-    st==='Hadir'?'Terima kasih, sampai jumpa di hari bahagia kami.':(st==='Masih ragu'?'Terima kasih, semoga Anda dapat hadir.':'Terima kasih atas doa dan perhatian Anda.'));});
+  var msg='Assalamu’alaikum, saya '+nm+'.\nKonfirmasi kehadiran di pernikahan Akmal & Amelia (Minggu, 21 Maret 2027): '+st+'.\nTerima kasih.',
+      judul=st==='Hadir'?'Terima kasih, sampai jumpa di hari bahagia kami.':(st==='Masih ragu'?'Terima kasih, semoga Anda dapat hadir.':'Terima kasih atas doa dan perhatian Anda.');
+  if(!SHEET){kirim($('rOut'),msg,judul);return;}
+  var btn=f.querySelector('button[type=submit]');if(btn)btn.disabled=true;
+  tampilOut($('rOut'),'<p class="kc">Mengirim konfirmasi…</p>');
+  keSheet({aksi:'hadir',nama:nm,status:st,situs:jebakan(f)})
+    .then(function(){tampilOut($('rOut'),'<p class="ok">'+esc(judul)+'</p><p class="kc">Konfirmasi Anda sudah kami terima.</p>');},
+          function(){kirim($('rOut'),msg,judul);})
+    .then(function(){if(btn)btn.disabled=false;});});
 /* dinding doa */
-var DOA=[],DOA_SAYA=[];
+var DOA=[],DOA_SHEET=[],DOA_SAYA=[],DOA_BATAS=12,doaJson='';
 try{DOA_SAYA=JSON.parse(localStorage.getItem('doaSaya')||'[]').filter(function(d){return d&&d.n&&d.p;});}catch(e){DOA_SAYA=[];}
-function lukisDinding(){var el=$('dinding'),semua=DOA_SAYA.slice().reverse().map(function(d){return {n:d.n,p:d.p,saya:1};}).concat(DOA);
+function simpanSaya(){try{localStorage.setItem('doaSaya',JSON.stringify(DOA_SAYA));}catch(x){}}
+function kunciDoa(d){return String(d.n).trim().toLowerCase()+'|'+String(d.p).replace(/\s+/g,' ').trim().toLowerCase();}
+function lukisDinding(){var el=$('dinding'),ada={},diSheet={},semua=[];
+  DOA_SHEET.forEach(function(d){diSheet[kunciDoa(d)]=1;});
+  DOA_SAYA.slice().reverse().forEach(function(d){var k=kunciDoa(d);if(!ada[k]){ada[k]=1;semua.push({n:d.n,p:d.p,saya:1,tunggu:d.t===0&&!diSheet[k]});}});
+  DOA_SHEET.concat(DOA).forEach(function(d){var k=kunciDoa(d);if(!ada[k]){ada[k]=1;semua.push({n:d.n,p:d.p});}});
   if(!semua.length){el.innerHTML='<p class="kosong">'+frasa('Doa-doa yang sudah sampai kepada kami|akan tampil di sini.')+'</p>';}
-  else el.innerHTML='<p class="jd">'+semua.length+' doa untuk kami</p><ul>'+semua.map(function(d){
-    return '<li'+(d.saya?' class="saya"':'')+'><b>'+esc(d.n)+(d.saya?'<em>doa Anda</em>':'')+'</b><p>'+esc(d.p)+'</p></li>';}).join('')+'</ul>';
+  else{var tampil=semua.slice(0,DOA_BATAS);
+    el.innerHTML='<p class="jd">'+semua.length+' doa untuk kami</p><ul>'+tampil.map(function(d){
+      return '<li'+(d.saya?' class="saya"':'')+'><b>'+esc(d.n)+(d.saya?'<em>'+(d.tunggu?'doa Anda · menunggu':'doa Anda')+'</em>':'')+'</b><p>'+esc(d.p)+'</p></li>';}).join('')+'</ul>'+
+      (semua.length>tampil.length?'<div class="btns"><button class="btn o" type="button" data-doa-lagi="1">Lihat doa lainnya ('+(semua.length-tampil.length)+')</button></div>':'');}
   if(window.ukurIsi)setTimeout(window.ukurIsi,40);}
+$('dinding').addEventListener('click',function(e){var b=e.target.closest&&e.target.closest('[data-doa-lagi]');if(!b)return;DOA_BATAS+=24;lukisDinding();});
 lukisDinding();
 try{fetch('ucapan.json',{cache:'no-store'}).then(function(r){return r.ok?r.json():[];}).then(function(a){
   if(Array.isArray(a)){DOA=a.filter(function(d){return d&&d.n&&d.p;});lukisDinding();}}).catch(function(){});}catch(e){}
+/* v115: doa dari Google Sheets. Diambil sesudah sampul selesai, lalu tiap 90 detik selama undangan terbuka. */
+function muatDoa(){if(!SHEET)return;
+  try{fetch(SHEET+(SHEET.indexOf('?')>-1?'&':'?')+'aksi=doa').then(function(r){return r.json();}).then(function(j){
+    if(!j||!j.ok||!Array.isArray(j.doa))return;
+    var a=j.doa.filter(function(d){return d&&d.n&&d.p;}).map(function(d){return {n:String(d.n),p:String(d.p)};}),s=JSON.stringify(a);
+    if(s!==doaJson){doaJson=s;DOA_SHEET=a;lukisDinding();}}).catch(function(){});}catch(e){}}
+(function mulaiDoa(){if(!SHEET)return;var c=$('cover');if(c&&!c.hidden){setTimeout(mulaiDoa,1500);return;}
+  muatDoa();setInterval(function(){if(!document.hidden)muatDoa();},90000);
+  document.addEventListener('visibilitychange',function(){if(!document.hidden)muatDoa();});})();
 $('fUcap').addEventListener('submit',function(e){e.preventDefault();var f=e.target,nm=f.elements.nama.value.trim(),ps=f.elements.pesan.value.trim();if(!nm||!ps)return;
-  DOA_SAYA.push({n:nm,p:ps});DOA_SAYA=DOA_SAYA.slice(-5);try{localStorage.setItem('doaSaya',JSON.stringify(DOA_SAYA));}catch(x){}
+  var msg='Doa untuk Akmal & Amelia\nDari: '+nm+'\n\n'+ps,saya={n:nm,p:ps};
+  DOA_SAYA.push(saya);DOA_SAYA=DOA_SAYA.slice(-5);simpanSaya();
   lukisDinding();f.elements.pesan.value='';
-  kirim($('uOut'),'Doa untuk Akmal & Amelia\nDari: '+nm+'\n\n'+ps,'Terima kasih atas doanya.');});
+  if(!SHEET){kirim($('uOut'),msg,'Terima kasih atas doanya.');return;}
+  var btn=f.querySelector('button[type=submit]');if(btn)btn.disabled=true;
+  tampilOut($('uOut'),'<p class="kc">Mengirim doa…</p>');
+  keSheet({aksi:'doa',nama:nm,doa:ps,situs:jebakan(f)})
+    .then(function(j){saya.t=j.tampil?1:0;simpanSaya();lukisDinding();
+        tampilOut($('uOut'),'<p class="ok">Terima kasih atas doanya.</p><p class="kc">'+(j.tampil?'Doa Anda sudah tampil di dinding doa.':'Doa Anda akan tampil setelah kami baca.')+'</p>');
+        setTimeout(muatDoa,1500);},
+          function(){kirim($('uOut'),msg,'Terima kasih atas doanya.');})
+    .then(function(){if(btn)btn.disabled=false;});});
 
 /* ============ hitung mundur ============ */
 var target=new Date(DATA.hari).getTime();
@@ -4265,7 +4311,7 @@ function awalTeks(){var m=UJ?UJ.m:null;if(!m)return '';function d(v){return v?(v
   return 'awal: FCP '+d(m.fcp)+'s  LCP '+d(m.lcp)+'s  sampul-siap '+d(m.t1)+'s  penuh '+d(m.t2)+'s\n';}
 function sfxTeks(){var d=window.SFX&&SFX.dbg?SFX.dbg():null;if(!d)return '';
   return 'suara: gema '+(d.rev?'ya':'-')+' aula '+(d.rev2?'ya':'-')+' derau '+(d.nb?'ya':'-')+'  siap '+n0(d.ms)+'ms irisan'+n0(d.mx)+' pasang'+n0(d.ak)+'\n';}
-function v109Teks(){var h=document.documentElement.classList,q=location.search,w=window.__WM,t='v114 kilau '+(h.contains('kilau-baru')?'B':'L')+(h.contains('kilau-mono')?'m':'')+' adegan '+(w&&w.aktif?'hangat':'mati')+' pita '+(/[?&]pita=lama/.test(q)?'L':'B')+' kartu '+(/[?&]kartu=lama/.test(q)?'L':'B')+' kv '+(window.SAMPUL&&SAMPUL.kv?SAMPUL.kv.s:'-')+' bidang '+(window.__bdk?__bdk.s:'-')+' tajam '+(window.__tjk?__tjk.s+(__tjk.ms?' '+n0(__tjk.ms)+'ms':''):'-')+' satwa '+(window.__swn?__swn.s+' '+__swn.n+'/'+__swn.g:'-')+' bl '+(window.SAMPUL&&SAMPUL.bl?SAMPUL.bl.s+(SAMPUL.bl.ms?' '+n0(SAMPUL.bl.ms)+'ms':''):'-')+' pintu '+(window.SAMPUL&&SAMPUL.pk?SAMPUL.pk.s:'-')+' akhir '+(window.SAMPUL&&SAMPUL.ak?SAMPUL.ak.s+(SAMPUL.ak.ms?' '+n0(SAMPUL.ak.ms)+'ms':''):'-')+' kabut '+(window.SAMPUL&&SAMPUL.kb?SAMPUL.kb.s+(SAMPUL.kb.ds&&SAMPUL.kb.ds!=='-'?' dasar '+SAMPUL.kb.ds:'')+(SAMPUL.kb.ms?' '+n0(SAMPUL.kb.ms)+'ms':''):'-')+' kupu '+((function(){var cv=document.getElementById('cover');return /[?&]kupu=lama/.test(q)?'L':(cv&&cv.classList.contains('kp-b0')?'B':'b?');})())+' lagu-pra '+(window.__laguPra?'ya':'-');
+function v109Teks(){var h=document.documentElement.classList,q=location.search,w=window.__WM,t='v115 kilau '+(h.contains('kilau-baru')?'B':'L')+(h.contains('kilau-mono')?'m':'')+' adegan '+(w&&w.aktif?'hangat':'mati')+' pita '+(/[?&]pita=lama/.test(q)?'L':'B')+' kartu '+(/[?&]kartu=lama/.test(q)?'L':'B')+' kv '+(window.SAMPUL&&SAMPUL.kv?SAMPUL.kv.s:'-')+' bidang '+(window.__bdk?__bdk.s:'-')+' tajam '+(window.__tjk?__tjk.s+(__tjk.ms?' '+n0(__tjk.ms)+'ms':''):'-')+' satwa '+(window.__swn?__swn.s+' '+__swn.n+'/'+__swn.g:'-')+' bl '+(window.SAMPUL&&SAMPUL.bl?SAMPUL.bl.s+(SAMPUL.bl.ms?' '+n0(SAMPUL.bl.ms)+'ms':''):'-')+' pintu '+(window.SAMPUL&&SAMPUL.pk?SAMPUL.pk.s:'-')+' akhir '+(window.SAMPUL&&SAMPUL.ak?SAMPUL.ak.s+(SAMPUL.ak.ms?' '+n0(SAMPUL.ak.ms)+'ms':''):'-')+' kabut '+(window.SAMPUL&&SAMPUL.kb?SAMPUL.kb.s+(SAMPUL.kb.ds&&SAMPUL.kb.ds!=='-'?' dasar '+SAMPUL.kb.ds:'')+(SAMPUL.kb.ms?' '+n0(SAMPUL.kb.ms)+'ms':''):'-')+' kupu '+((function(){var cv=document.getElementById('cover');return /[?&]kupu=lama/.test(q)?'L':(cv&&cv.classList.contains('kp-b0')?'B':'b?');})())+' lagu-pra '+(window.__laguPra?'ya':'-');
   if(w&&w.ms){var k=Object.keys(w.ms);if(k.length)t+=' | '+k.map(function(x){return x.charAt(0)+n0(w.ms[x]);}).join(' ');}
   return t+'\n';}
 function kadTeks(){var c=window.SAMPUL&&SAMPUL.pc;return c?'irama-lorong: '+c.s+(/[?&]kad=0/.test(location.search)?' (DIMATIKAN)':'')+'\n':'';}
