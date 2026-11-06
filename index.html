@@ -64,7 +64,7 @@ mc.port1.onmessage=function(){if(!pend)return;var now=performance.now(),c=now-pe
   var a=r.slice().sort(function(p,q){return p-q;}),C=a[Math.floor(a.length*.6)];s.C=C;   /* biaya tengah-atas: hentakan sesaat tidak ikut menentukan */
   var need=0,low=0;
   while(need<LV.length-1&&C>(LV[need]||V)*.62)need++;
-  while(low<LV.length-1&&C>(LV[low]||V)*.42)low++;
+  while(low<LV.length-1&&C>(LV[low]||V)*.5)low++;   /* v113: dulu .42 */
   if(need>s.lv){s.dn=0;
     var cd=cadOK(x);
     if(cd!==0)s.up=0;   /* langkah gerak sudah mantap & sesuai rencana (mis. 45/dtk di layar 90 Hz) atau datanya belum cukup: beban tinggi saja bukan alasan menjarangkan gerak */
@@ -1137,7 +1137,12 @@ function pkUkur(){for(var i=0;i<PKV.el.length;i++){var c=PKV.el[i];if(c.__j==='u
   if(c.__ok&&(Math.abs(c.offsetWidth-c.__bw)>2||Math.abs(c.offsetHeight-c.__bh)>2)){c.__ok=0;PKV.ok--;}pkGambar(c);}}
 /* sampul selesai: tekstur kanvas sampul dilepas (balairung, ujung balairung, pintu, monolog) */
 function kanvasLepas(){var L=PKV.el.slice();BL.forEach(function(c){if(c.__u)L.push(c);});if(AKC&&AKC.cv)L.push(AKC.cv);
-  L.forEach(function(c){try{if(c.tagName==='CANVAS'){c.__lepas=1;c.width=c.height=1;}}catch(e){}});PKV.s+=' dilepas';}
+  /* v113: satu kanvas tiap ±300 ms (yang besar dulu), hanya saat tidak sedang berpindah halaman */
+  L=L.filter(function(c){return c&&c.tagName==='CANVAS';}).sort(function(a,b){return b.width*b.height-a.width*a.height;});PKV.s+=' dilepas';
+  (function satu(n){var G=window.__GOV,now=performance.now();if(!L.length)return;
+    if(n<40&&G&&G.S&&(G.cx!==0||now-G.S[1].lt<800)){setTimeout(function(){satu(n+1);},400);return;}
+    var c=L.shift();try{c.__lepas=1;c.width=c.height=1;}catch(e){}
+    if(L.length)setTimeout(function(){satu(0);},300);})(0);}
 function akGambar(){var c=AKC.cv;if(!c||AKC.ok||!AKIMG.naturalWidth)return;
   try{var t0=performance.now(),w=AKIMG.naturalWidth,h=AKIMG.naturalHeight;if(c.width!==w)c.width=w;if(c.height!==h)c.height=h;
     var x=c.getContext('2d');if(!x)throw 0;x.clearRect(0,0,w,h);x.drawImage(AKIMG,0,0,w,h);AKC.ok=true;AKC.ms=performance.now()-t0;AKC.s='kanvas';B.classList.remove('s-akcss');}
@@ -1573,9 +1578,12 @@ function tirGLganti(){if(!TG.ok||TIR===TG.cv)return;
   tirai.style.visibility='hidden';tirai.__g={};tirai.width=tirai.height=1;TIR=TG.cv;TG.cv.__d=-1;}
 /* pertunjukan sampul selesai: konteks WebGL & tekstur dilepas agar memori HP kembali untuk undangan */
 function bersihGL(){
-  [TG,LG].forEach(function(o){try{var gl=o.gl;o.ok=false;o.gagal=true;if(o.cv&&o.cv.parentNode)o.cv.parentNode.removeChild(o.cv);
-    if(gl){var e=gl.getExtension('WEBGL_lose_context');if(e)e.loseContext();}o.gl=null;o.cv=null;}catch(x){}});
-  LQ=LGR=LTEX=null;}
+  /* v113: satu konteks per giliran (pelepasan konteks = panggilan sinkron ke kartu grafis), jeda 800 ms */
+  var antre=[TG,LG];LQ=LGR=LTEX=null;
+  (function satu(){var o=antre.shift();if(!o)return;
+    try{var gl=o.gl;o.ok=false;o.gagal=true;if(o.cv&&o.cv.parentNode)o.cv.parentNode.removeChild(o.cv);
+      if(gl){var e=gl.getExtension('WEBGL_lose_context');if(e)e.loseContext();}o.gl=null;o.cv=null;}catch(x){}
+    if(antre.length)setTimeout(satu,800);})();}
 
 /* ================= adegan monolog & pintu joglo ================= */
 var TT=20.6,TTUTUP=TT+3.3,TZ=TT+3.9,DZ=5.6,AKHIR=TZ+DZ;   /* pintu mulai menutup, pintu rapat, kamera mundur, lama mundur */
@@ -1875,7 +1883,7 @@ function jalanTenang(t){var o=sm(0,1.1,t);gy(tutupH,'opacity',(o*(1-sm(1.4,2.6,t
   if(t>=2.6)selesai();}
 function bersihNanti(n){n=n||0;var G=window.__GOV,now=performance.now();   /* v109: pelepasan konteks WebGL = panggilan sinkron ke GPU; tunggu sampai deck diam (maks. ±14 dtk) */
   if(n<15&&G&&G.S&&(G.cx!==0||now-G.S[1].lt<1200)){setTimeout(function(){bersihNanti(n+1);},900);return;}
-  bersihGL();try{kanvasLepas();}catch(e){}}
+  bersihGL();setTimeout(function(){try{kanvasLepas();}catch(e){}},2000);}
 function selesai(){if(habis)return;habis=true;var K=kabar();if(K.selesai)K.selesai();setTimeout(bersihNanti,3500);}
 D.addEventListener('visibilitychange',function(){var n=performance.now();if(D.hidden){sembunyiT=n;}else if(sembunyiT){if(mulai>=0)jeda+=n-sembunyiT;sembunyiT=0;last=n;}});
 /* parallax kecil mengikuti penunjuk / kemiringan HP (tanpa meminta izin, agar tidak ada jendela izin di tengah pertunjukan) */
@@ -3166,7 +3174,7 @@ var SATWA=(function(){
     if(tr!==bg.tr){bg.el.style.transform=tr;bg.tr=tr;}
     if(!bg.vis){bg.el.style.visibility='';bg.vis=1;}
     bg.zc=wc;}
-  function urutBagian(c){var b=c.bag.slice().sort(function(a,b2){return b2.zc-a.zc;});
+  function urutBagian(c){var b=c.bag.slice().sort(function(a,b2){var d=b2.zc-a.zc;return (a.zi&&b2.zi&&Math.abs(d)<.0015*(a.zc+b2.zc))?a.zi-b2.zi:d;});   /* v113: hampir sejajar -> urutan lama */
     for(var i=0;i<b.length;i++){if(b[i].zi!==i+1){b[i].el.style.zIndex=i+1;b[i].zi=i+1;}}}
 
   /* kerangka badan: arah depan F, kanan R, atas U dari arah hadap (psi), angguk (th, naik +), guling (ph) */
@@ -4238,7 +4246,7 @@ function awalTeks(){var m=UJ?UJ.m:null;if(!m)return '';function d(v){return v?(v
   return 'awal: FCP '+d(m.fcp)+'s  LCP '+d(m.lcp)+'s  sampul-siap '+d(m.t1)+'s  penuh '+d(m.t2)+'s\n';}
 function sfxTeks(){var d=window.SFX&&SFX.dbg?SFX.dbg():null;if(!d)return '';
   return 'suara: gema '+(d.rev?'ya':'-')+' aula '+(d.rev2?'ya':'-')+' derau '+(d.nb?'ya':'-')+'  siap '+n0(d.ms)+'ms irisan'+n0(d.mx)+' pasang'+n0(d.ak)+'\n';}
-function v109Teks(){var h=document.documentElement.classList,q=location.search,w=window.__WM,t='v112 kilau '+(h.contains('kilau-baru')?'B':'L')+(h.contains('kilau-mono')?'m':'')+' adegan '+(w&&w.aktif?'hangat':'mati')+' pita '+(/[?&]pita=lama/.test(q)?'L':'B')+' kartu '+(/[?&]kartu=lama/.test(q)?'L':'B')+' kv '+(window.SAMPUL&&SAMPUL.kv?SAMPUL.kv.s:'-')+' bidang '+(window.__bdk?__bdk.s:'-')+' tajam '+(window.__tjk?__tjk.s+(__tjk.ms?' '+n0(__tjk.ms)+'ms':''):'-')+' satwa '+(window.__swn?__swn.s+' '+__swn.n+'/'+__swn.g:'-')+' bl '+(window.SAMPUL&&SAMPUL.bl?SAMPUL.bl.s+(SAMPUL.bl.ms?' '+n0(SAMPUL.bl.ms)+'ms':''):'-')+' pintu '+(window.SAMPUL&&SAMPUL.pk?SAMPUL.pk.s:'-')+' akhir '+(window.SAMPUL&&SAMPUL.ak?SAMPUL.ak.s+(SAMPUL.ak.ms?' '+n0(SAMPUL.ak.ms)+'ms':''):'-')+' kabut '+(window.SAMPUL&&SAMPUL.kb?SAMPUL.kb.s+(SAMPUL.kb.ds&&SAMPUL.kb.ds!=='-'?' dasar '+SAMPUL.kb.ds:'')+(SAMPUL.kb.ms?' '+n0(SAMPUL.kb.ms)+'ms':''):'-')+' kupu '+((function(){var cv=document.getElementById('cover');return /[?&]kupu=lama/.test(q)?'L':(cv&&cv.classList.contains('kp-b0')?'B':'b?');})())+' lagu-pra '+(window.__laguPra?'ya':'-');
+function v109Teks(){var h=document.documentElement.classList,q=location.search,w=window.__WM,t='v113 kilau '+(h.contains('kilau-baru')?'B':'L')+(h.contains('kilau-mono')?'m':'')+' adegan '+(w&&w.aktif?'hangat':'mati')+' pita '+(/[?&]pita=lama/.test(q)?'L':'B')+' kartu '+(/[?&]kartu=lama/.test(q)?'L':'B')+' kv '+(window.SAMPUL&&SAMPUL.kv?SAMPUL.kv.s:'-')+' bidang '+(window.__bdk?__bdk.s:'-')+' tajam '+(window.__tjk?__tjk.s+(__tjk.ms?' '+n0(__tjk.ms)+'ms':''):'-')+' satwa '+(window.__swn?__swn.s+' '+__swn.n+'/'+__swn.g:'-')+' bl '+(window.SAMPUL&&SAMPUL.bl?SAMPUL.bl.s+(SAMPUL.bl.ms?' '+n0(SAMPUL.bl.ms)+'ms':''):'-')+' pintu '+(window.SAMPUL&&SAMPUL.pk?SAMPUL.pk.s:'-')+' akhir '+(window.SAMPUL&&SAMPUL.ak?SAMPUL.ak.s+(SAMPUL.ak.ms?' '+n0(SAMPUL.ak.ms)+'ms':''):'-')+' kabut '+(window.SAMPUL&&SAMPUL.kb?SAMPUL.kb.s+(SAMPUL.kb.ds&&SAMPUL.kb.ds!=='-'?' dasar '+SAMPUL.kb.ds:'')+(SAMPUL.kb.ms?' '+n0(SAMPUL.kb.ms)+'ms':''):'-')+' kupu '+((function(){var cv=document.getElementById('cover');return /[?&]kupu=lama/.test(q)?'L':(cv&&cv.classList.contains('kp-b0')?'B':'b?');})())+' lagu-pra '+(window.__laguPra?'ya':'-');
   if(w&&w.ms){var k=Object.keys(w.ms);if(k.length)t+=' | '+k.map(function(x){return x.charAt(0)+n0(w.ms[x]);}).join(' ');}
   return t+'\n';}
 function kadTeks(){var c=window.SAMPUL&&SAMPUL.pc;return c?'irama-lorong: '+c.s+(/[?&]kad=0/.test(location.search)?' (DIMATIKAN)':'')+'\n':'';}
