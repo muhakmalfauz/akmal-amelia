@@ -511,6 +511,86 @@ select option{color:#2F3A2A}
 .dinding li b{display:block;font-family:var(--font-b);font-weight:400;font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--brick)}
 .dinding li b em{font-style:normal;letter-spacing:.1em;text-transform:none;color:var(--gold-t);margin-left:8px}
 .dinding li p{margin:6px 0 0;font-family:var(--font-d);font-style:italic;font-weight:500;font-size:18px;line-height:1.5;color:var(--teks);overflow-wrap:anywhere;white-space:pre-line}
+/* v119: UNTAIAN DOA SEPERTI RUANG OBROLAN, bergaya halimun batik (tanpa kotak, tanpa lingkaran inisial).
+   Belum ada doa: judul, keterangan, ajakan, dan kotak tulis berkumpul rapat di tengah layar.
+   Makin banyak doa, daftarnya memanjang sampai setinggi layar, lalu digulir di dalam (halaman tidak memanjang). */
+#ucapan>.in{height:max(100%,500px);min-height:0;padding:calc(3svh + 10px) 0 max(74px,calc(9svh + 6px))}
+#ucapan .kartu{flex:0 1 auto;min-height:0;max-height:760px;width:min(88%,352px);display:flex;flex-direction:column;align-items:stretch}
+#ucapan .kartu>.eyebrow,#ucapan .kartu>h2{flex:none}
+.obrolan{position:relative;flex:0 1 auto;min-height:0;margin-top:16px;display:flex;flex-direction:column;text-align:left}
+.obrolan.sepi{margin-top:24px}
+.ob-g,.ob-g *,.ob-info,.ob-baru,.ob-baru *,#fUcap.ob-tulis *{text-shadow:none!important}
+/* label jumlah doa: seperti label kecil di halaman lain, diapit garis emas tipis (tidak tampil bila belum ada doa) */
+.ob-kepala{flex:none;display:flex;align-items:center;justify-content:center;gap:10px;padding:0 0 2px;font-family:var(--font-b);font-size:11.5px;line-height:1.5;letter-spacing:.22em;text-transform:uppercase;color:var(--brick);font-variant-numeric:lining-nums tabular-nums;transition:opacity .3s}
+.ob-kepala span{padding-left:.22em}
+.ob-kepala::before,.ob-kepala::after{content:"";flex:none;width:28px;height:1px;background:linear-gradient(90deg,rgba(184,143,74,0),var(--gold))}
+.ob-kepala::after{transform:scaleX(-1)}
+.berinfo .ob-kepala{opacity:0}
+.obrolan.sepi .ob-kepala{display:none}
+/* ruang doa: setinggi isinya; bila doa sudah banyak, setinggi sisa layar lalu digulir (tepi atas & bawah memudar seperti halimun) */
+.ob-ruang{position:relative;flex:0 1 auto;min-height:0;display:flex;flex-direction:column}
+.ob-daftar{position:relative;flex:0 1 auto;min-height:0;overflow-x:hidden;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;scrollbar-width:none;outline:0}
+.ob-daftar.gulir{-webkit-mask-image:linear-gradient(to bottom,transparent 0,#000 18px,#000 calc(100% - 12px),transparent 100%);mask-image:linear-gradient(to bottom,transparent 0,#000 18px,#000 calc(100% - 12px),transparent 100%)}
+.ob-daftar::-webkit-scrollbar{display:none}
+.ob-daftar:focus-visible{outline:1px dashed rgba(184,143,74,.6);outline-offset:-2px}
+.ob-isi{display:flex;flex-direction:column;padding:14px 2px 12px}
+.ob-daftar.sepi .ob-isi{padding:0 4px 24px}
+.ob-pesan{display:flex;flex-direction:column}
+.ob-m{display:flex;margin-top:12px}
+.ob-m.lanjut{margin-top:4px}
+.ob-pesan>.ob-m:first-child{margin-top:0}
+.ob-g{position:relative;min-width:0;max-width:86%;padding:7px 13px 8px;background:rgba(255,252,246,.84);border:1px solid rgba(184,143,74,.45);border-radius:4px 16px 16px 16px}
+.ob-m.lanjut .ob-g{border-radius:16px}
+.ob-n{display:block;margin:0 0 2px;font-family:var(--font-b);font-weight:400;font-size:11px;line-height:1.45;letter-spacing:.12em;text-transform:uppercase;color:var(--brick);overflow-wrap:anywhere}
+.ob-sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.ob-g p{margin:0;font-family:var(--font-d);font-weight:600;font-size:17px;line-height:1.38;color:var(--teks);overflow-wrap:anywhere;white-space:pre-line}
+/* doa tamu sendiri: hijau zaitun seperti tombol Kirim di halaman Konfirmasi Kehadiran */
+.ob-m.saya{justify-content:flex-end}
+.ob-m.saya .ob-g{background:linear-gradient(155deg,var(--olive-2),var(--ink) 72%);border-color:var(--ink);border-radius:16px 4px 16px 16px}
+.ob-m.saya.lanjut .ob-g{border-radius:16px}
+.ob-m.saya .ob-n{color:var(--gold-l)}
+.ob-m.saya .ob-g p{color:#F6F0E2}
+.ob-st{display:flex;align-items:center;justify-content:flex-end;gap:4px;margin-top:4px;font-family:var(--font-b);font-size:11px;line-height:1.3;letter-spacing:.05em;color:rgba(227,201,143,.92)}
+.ob-st svg{flex:none;width:16px;height:10px}
+.ob-st .jam{width:12px;height:12px}
+.ob-st.gagal{color:#F2BFAE}
+.ob-aksi{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:6px;margin-top:7px}
+.ob-aksi button,.ob-aksi a{appearance:none;-webkit-appearance:none;display:inline-flex;align-items:center;min-height:32px;margin:0;padding:4px 12px;border-radius:999px;border:1px solid rgba(227,201,143,.7);background:rgba(243,235,221,.08);
+  color:#F3E3BC;font-family:var(--font-b);font-size:11px;letter-spacing:.1em;text-transform:uppercase;text-decoration:none;cursor:pointer}
+.ob-m.baru{animation:obMasuk .45s cubic-bezier(.2,.7,.2,1) both}
+@keyframes obMasuk{from{opacity:0;transform:translate3d(0,10px,0)}to{opacity:1;transform:none}}
+/* belum ada doa: keterangan lalu ajakan, rata tengah seperti tulisan di halaman lain */
+.ob-kosong{text-align:center}
+.ob-cat{margin:0 auto;max-width:30ch;font-family:var(--font-d);font-weight:600;font-size:16px;line-height:1.45;color:var(--teks-2);text-wrap:balance}
+.ob-ajak{margin:10px auto 0;max-width:30ch;font-family:var(--font-d);font-style:italic;font-weight:500;font-size:19px;line-height:1.4;color:var(--ink);text-wrap:balance}
+.ob-ajak:first-child{margin-top:0}
+.ob-baru{position:absolute;left:50%;bottom:12px;z-index:3;transform:translateX(-50%);display:inline-flex;align-items:center;gap:7px;min-height:34px;margin:0;padding:6px 14px 6px 16px;border-radius:999px;border:1px solid rgba(184,143,74,.75);background:rgba(250,245,236,.96);color:var(--ink);
+  font-family:var(--font-b);font-size:11px;letter-spacing:.16em;text-transform:uppercase;white-space:nowrap;cursor:pointer;box-shadow:0 8px 18px -10px rgba(47,58,42,.55)}
+.ob-baru svg{width:12px;height:12px}
+.ob-info{position:absolute;left:50%;top:-6px;z-index:5;transform:translateX(-50%);width:max-content;max-width:calc(100% - 20px);padding:6px 16px;border-radius:14px;background:rgba(47,58,42,.95);color:#F6F0E2;
+  font-family:var(--font-d);font-style:italic;font-weight:500;font-size:16px;line-height:1.3;text-align:center;box-shadow:0 10px 22px -12px rgba(0,0,0,.6);animation:obInfo .35s ease-out both;transition:opacity .4s}
+.ob-info.pudar{opacity:0}
+@keyframes obInfo{from{opacity:0;transform:translate(-50%,-6px)}to{opacity:1;transform:translate(-50%,0)}}
+/* kotak tulis: dipisah garis emas tipis; isian bergaris seperti formulir lain, kolom doa & tombol bundar seperti tombol undangan */
+#fUcap.ob-tulis{position:relative;flex:none;display:grid;gap:10px;margin:0;max-width:none;width:auto;padding:16px 2px 0;background:none;border:0;text-align:left}
+#fUcap.ob-tulis::before{content:"";position:absolute;left:6%;right:6%;top:0;height:1px;background:linear-gradient(90deg,rgba(184,143,74,0),rgba(184,143,74,.75),rgba(184,143,74,0))}
+#fUcap .ob-dari{display:flex;align-items:center;justify-items:start;gap:10px;padding:0 6px;font-family:var(--font-b);font-size:11.5px;letter-spacing:.22em;text-transform:uppercase;color:var(--brick);cursor:text}
+.ob-dari>span{flex:none}
+#fUcap .ob-dari input{flex:1 1 auto;min-width:0;width:auto;min-height:30px;padding:2px 2px 3px;border:0;border-bottom:1px solid rgba(184,143,74,.6);border-radius:0;background:transparent;
+  font-family:var(--font-d);font-weight:600;font-size:17px;line-height:1.3;letter-spacing:0;text-transform:none;text-align:left;text-align-last:auto;color:var(--ink)}
+#fUcap .ob-dari input:focus-visible{outline:none;border-bottom-color:var(--gold)}
+.ob-pena{flex:none;width:14px;height:14px;color:var(--gold-t);opacity:.85}
+.ob-baris{display:flex;align-items:flex-end;gap:8px}
+#fUcap .ob-baris textarea{flex:1 1 auto;min-width:0;width:auto;height:44px;min-height:44px;max-height:112px;margin:0;padding:10px 15px;border:1px solid rgba(184,143,74,.75);border-radius:22px;background:rgba(255,252,246,.8);
+  font-family:var(--font-d);font-weight:600;font-size:17px;line-height:1.35;letter-spacing:0;text-align:left;text-align-last:auto;resize:none;overflow-y:hidden;color:var(--ink)}
+#fUcap .ob-baris textarea.penuh{overflow-y:auto}
+#fUcap .ob-baris textarea:focus-visible{outline:none;border-color:var(--gold);box-shadow:0 0 0 3px rgba(184,143,74,.2)}
+.ob-kirim{flex:none;width:44px;height:44px;margin:0;padding:0;border:0;border-radius:50%;display:grid;place-items:center;cursor:pointer;background:var(--ink);color:#F3E3BC;
+  box-shadow:0 0 0 1px rgba(184,143,74,.7),0 6px 14px -7px rgba(47,58,42,.7);-webkit-tap-highlight-color:transparent}
+.ob-kirim svg{width:20px;height:20px;margin-left:2px}
+.ob-kirim:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+.ob-kirim:active{transform:scale(.95)}
+@media (prefers-reduced-motion:reduce){.ob-m.baru,.ob-info{animation:none!important}}
 
 /* penutup */
 .sig{font-family:var(--font-d);font-style:italic;font-weight:500;font-size:19.5px;line-height:1.45;color:var(--teks);margin:24px 0 0;text-wrap:balance}
@@ -1042,13 +1122,23 @@ html.pgGerak #jejak.on{opacity:0}
 <section class="pg" id="ucapan" data-bg="iring"><div class="in"><div class="kartu sec">
   <p class="eyebrow rv">Buku Tamu</p>
   <h2 class="t rv d1">Untaian Doa</h2>
-  <form id="fUcap" class="rv d2" autocomplete="off"><input class="jebakan" name="situs" tabindex="-1" autocomplete="off" aria-hidden="true">
-    <label>Nama<input id="uNama" name="nama" required maxlength="60" placeholder="Nama Anda" autocomplete="name"></label>
-    <label>Doa &amp; ucapan<textarea id="uPesan" name="pesan" required maxlength="400" placeholder="Tulis doa terbaik untuk kami"></textarea></label>
-    <button class="btn" type="submit">Kirim Doa</button>
-  </form>
-  <div class="out" id="uOut" hidden></div>
-  <div class="dinding rv d3" id="dinding"></div>
+  <div class="obrolan rv d2" id="obrolan">
+    <div class="ob-kepala"><span id="obHit">Doa untuk kami</span></div>
+    <div class="ob-info" id="uOut" role="status" aria-live="polite" hidden></div>
+    <div class="ob-ruang">
+      <div class="ob-daftar" id="dinding" role="log" aria-label="Doa dari para tamu" tabindex="0">
+        <div class="ob-isi" id="obIsi"><div class="ob-pesan" id="obPesan"></div></div>
+      </div>
+      <button class="ob-baru" id="obBaru" type="button" hidden>Doa baru</button>
+    </div>
+    <form id="fUcap" class="ob-tulis" autocomplete="off"><input class="jebakan" name="situs" tabindex="-1" autocomplete="off" aria-hidden="true">
+      <label class="ob-dari"><span>Dari</span><input id="uNama" name="nama" required maxlength="60" placeholder="Tulis nama Anda" autocomplete="name"><svg class="ob-pena" viewBox="0 0 16 16" aria-hidden="true"><path d="M10.9 2.5l2.6 2.6-7.7 7.7-3.3.7.7-3.3z" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/></svg></label>
+      <div class="ob-baris">
+        <textarea id="uPesan" name="pesan" required maxlength="400" rows="1" placeholder="Tulis doa untuk kami&hellip;" aria-label="Doa dan ucapan"></textarea>
+        <button class="ob-kirim" type="submit" aria-label="Kirim doa"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.4 20.4 21.2 12.7c.8-.4.8-1.5 0-1.8L3.4 3.6c-.7-.3-1.4.2-1.4.9v4.8c0 .5.4.9.9 1l10.6 1.7L2.9 13.7c-.5.1-.9.5-.9 1v4.8c0 .7.7 1.2 1.4.9z" fill="currentColor"/></svg></button>
+      </div>
+    </form>
+  </div>
 </div></div></section>
 <section class="pg tutup" id="penutup" data-bg="couple"><div class="in"><div class="kartu sec">
   <h2 class="t rv">Terima Kasih</h2>
@@ -2037,7 +2127,9 @@ function copy(txt,done){
   try{if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(txt).then(function(){done(true);},fb);}else fb();}catch(e){fb();}
 }
 document.addEventListener('click',function(e){var b=e.target.closest&&e.target.closest('[data-copy]');if(!b)return;
-  copy(b.getAttribute('data-copy'),function(ok){toast(ok?'Tersalin.':'Belum bisa menyalin, silakan salin manual.');});});
+  copy(b.getAttribute('data-copy'),function(ok){
+    if(b.closest('.out')){if(!b.__t0)b.__t0=b.textContent;b.textContent=ok?'Tersalin':'Salin manual';clearTimeout(b.__tt);b.__tt=setTimeout(function(){b.textContent=b.__t0;},2400);return;}
+    toast(ok?'Tersalin.':'Belum bisa menyalin, silakan salin manual.');});});
 
 /* ============ KONFIRMASI KEHADIRAN & DOA ============
    Dikirim lewat WhatsApp kepada pengantin. Doa yang sudah diterima pengantin ditampilkan untuk semua tamu
@@ -2070,47 +2162,131 @@ $('fRsvp').addEventListener('submit',function(e){e.preventDefault();var f=e.targ
     .then(function(){tampilOut($('rOut'),'<p class="ok">'+esc(judul)+'</p><p class="kc">Konfirmasi Anda sudah kami terima.</p>');},
           function(){kirim($('rOut'),msg,judul);})
     .then(function(){if(btn)btn.disabled=false;});});
-/* dinding doa */
-var DOA=[],DOA_SHEET=[],DOA_SAYA=[],DOA_BATAS=12,doaJson='';
+/* ============ v117: UNTAIAN DOA SEPERTI RUANG OBROLAN ============
+   Semua doa tampil berurutan seperti obrolan: terlama di atas, terbaru di bawah. Daftar digulir di dalam kartu,
+   jadi halaman tidak memanjang. Doa tamu sendiri di kanan dengan keterangan terkirim / belum terkirim. */
+var DOA=[],DOA_SHEET=[],DOA_SAYA=[],doaJson='',doaSiap=false,doaGagal=false,doaMuat=false,doaKapan=0;
 try{DOA_SAYA=JSON.parse(localStorage.getItem('doaSaya')||'[]').filter(function(d){return d&&d.n&&d.p;});}catch(e){DOA_SAYA=[];}
-function simpanSaya(){try{localStorage.setItem('doaSaya',JSON.stringify(DOA_SAYA));}catch(x){}}
+function simpanSaya(){try{localStorage.setItem('doaSaya',JSON.stringify(DOA_SAYA.slice(-8).map(function(d){return {n:d.n,p:d.p,t:d.t,s:d.s==='kirim'?'gagal':d.s};})));}catch(x){}}
 function kunciDoa(d){return String(d.n).trim().toLowerCase()+'|'+String(d.p).replace(/\s+/g,' ').trim().toLowerCase();}
-function lukisDinding(){var el=$('dinding'),ada={},diSheet={},semua=[];
-  DOA_SHEET.forEach(function(d){diSheet[kunciDoa(d)]=1;});
-  DOA_SAYA.slice().reverse().forEach(function(d){var k=kunciDoa(d);if(!ada[k]){ada[k]=1;semua.push({n:d.n,p:d.p,saya:1,tunggu:d.t===0&&!diSheet[k]});}});
-  DOA_SHEET.concat(DOA).forEach(function(d){var k=kunciDoa(d);if(!ada[k]){ada[k]=1;semua.push({n:d.n,p:d.p});}});
-  if(!semua.length){el.innerHTML='<p class="kosong">'+frasa('Doa-doa yang sudah sampai kepada kami|akan tampil di sini.')+'</p>';}
-  else{var tampil=semua.slice(0,DOA_BATAS);
-    el.innerHTML='<p class="jd">'+semua.length+' doa untuk kami</p><ul>'+tampil.map(function(d){
-      return '<li'+(d.saya?' class="saya"':'')+'><b>'+esc(d.n)+(d.saya?'<em>'+(d.tunggu?'doa Anda · menunggu':'doa Anda')+'</em>':'')+'</b><p>'+esc(d.p)+'</p></li>';}).join('')+'</ul>'+
-      (semua.length>tampil.length?'<div class="btns"><button class="btn o" type="button" data-doa-lagi="1">Lihat doa lainnya ('+(semua.length-tampil.length)+')</button></div>':'');}
-  if(window.ukurIsi)setTimeout(window.ukurIsi,40);}
-$('dinding').addEventListener('click',function(e){var b=e.target.closest&&e.target.closest('[data-doa-lagi]');if(!b)return;DOA_BATAS+=24;lukisDinding();});
+function pesanDoa(nm,ps){return 'Doa untuk Akmal & Amelia\nDari: '+nm+'\n\n'+ps;}
+var OB=$('obrolan'),OBD=$('dinding'),OBI=$('obIsi'),OBP=$('obPesan'),OBB=$('obBaru'),OBH=$('obHit'),UP=$('uPesan'),obTampil=[],ikutBawah=true,obBaruN=0;
+if(!SHEET)OB.classList.add('tanpa-hidup');
+var IK_JAM='<svg class="jam" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.2" fill="none" stroke="currentColor" stroke-width="1.3"/><path d="M8 4.8V8l2.2 1.4" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>',
+    IK_CEK='<svg viewBox="0 0 20 12" aria-hidden="true"><path d="M1.5 6.6 4.6 9.6 11 2.4M8.2 9.1l.6.6L15.6 2.4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+function htmlStatus(d){
+  if(d.st==='kirim')return '<small class="ob-st">'+IK_JAM+'mengirim…</small>';
+  if(d.st==='ok')return '<small class="ob-st">terkirim'+IK_CEK+'</small>';
+  if(d.st==='tunggu')return '<small class="ob-st">terkirim · tampil setelah dibaca'+IK_CEK+'</small>';
+  var u=waLink(pesanDoa(d.n,d.p));
+  return '<small class="ob-st gagal">belum terkirim</small><span class="ob-aksi">'+(SHEET?'<button type="button" data-ob="ulang">Coba lagi</button>':'')+
+    (u?'<a href="'+esc(u)+'" target="_blank" rel="noopener">Lewat WhatsApp</a>':'<button type="button" data-ob="salin">Salin doa</button>')+'</span>';}
+/* belum ada doa: keterangan lalu ajakan (keduanya hilang begitu doa pertama masuk) */
+var KOSONG_HTML='<div class="ob-kosong"><p class="ob-cat">'+frasa('Doa yang dikirim dapat dibaca|oleh semua tamu undangan.')+'</p>'+
+  '<p class="ob-ajak">'+frasa('Jadilah yang pertama|memulai untaian doa untuk kami.')+'</p></div>';
+function samaOrang(a,b){return !!(a&&b)&&a.saya===b.saya&&a.n.trim().toLowerCase()===b.n.trim().toLowerCase();}
+function htmlDoa(d,prev){var lj=samaOrang(d,prev);
+  return '<div class="ob-m'+(d.saya?' saya':'')+(lj?' lanjut':'')+'" data-k="'+esc(d.k)+'">'+
+    '<div class="ob-g">'+(lj?'<b class="ob-sr">'+esc(d.n)+': </b>':'<b class="ob-n">'+esc(d.n)+'</b>')+'<p>'+esc(d.p)+'</p>'+(d.saya?htmlStatus(d):'')+'</div></div>';}
+/* urutan obrolan: doa lama (ucapan.json) lalu doa dari Google Sheets (dibalik: terlama di atas), lalu doa tamu ini yang belum ada di sana */
+function susunDoa(){var ada={},sayaK={},semua=[];
+  DOA_SAYA.forEach(function(d){sayaK[kunciDoa(d)]=d;});
+  DOA.concat(DOA_SHEET.slice().reverse()).forEach(function(d){var k=kunciDoa(d);if(ada[k])return;ada[k]=1;
+    semua.push({n:String(d.n),p:String(d.p),k:k,saya:sayaK[k]?1:0,st:sayaK[k]?'ok':''});});
+  DOA_SAYA.forEach(function(d){var k=kunciDoa(d);if(ada[k])return;ada[k]=1;
+    semua.push({n:String(d.n),p:String(d.p),k:k,saya:1,st:d.s||(d.t===1?'ok':d.t===0?'tunggu':'gagal')});});
+  return semua;}
+function gantiStatus(el,d){var g=el&&el.querySelector('.ob-g');if(!g)return;
+  [].slice.call(g.querySelectorAll('.ob-st,.ob-aksi')).forEach(function(x){g.removeChild(x);});g.insertAdjacentHTML('beforeend',htmlStatus(d));}
+function keBawah(){OBD.scrollTop=OBD.scrollHeight;ikutBawah=true;}
+function tandaBaru(){OBB.innerHTML=(obBaruN>1?obBaruN+' doa baru':'Doa baru')+'<svg viewBox="0 0 12 12" aria-hidden="true"><path d="M6 2v7.4M2.6 6.2 6 9.6l3.4-3.4" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>';OBB.hidden=false;}
+function lukisDinding0(){var semua=susunDoa(),n=obTampil.length,i,awal;
+  var nt=semua.filter(function(d){return !(d.saya&&d.st==='gagal');}).length;OBH.textContent=nt?nt+' doa untuk kami':'Doa untuk kami';OB.classList.toggle('putus',doaGagal);
+  if(!semua.length){obTampil=[];OBD.classList.add('sepi');
+    OBP.innerHTML=SHEET&&!doaSiap?'<div class="ob-kosong"><p class="ob-ajak">Memuat doa para tamu…</p></div>':
+      (doaGagal?'<div class="ob-kosong"><p class="ob-ajak">'+frasa('Doa para tamu|belum dapat dimuat.')+'</p><p class="ob-cat">Periksa sinyal Anda, nanti dicoba lagi.</p></div>':KOSONG_HTML);return;}
+  var bawah=ikutBawah;
+  if(OBD.classList.contains('sepi')){OBD.classList.remove('sepi');OBP.innerHTML='';n=0;}
+  awal=n<=semua.length;for(i=0;i<n&&awal;i++)if(obTampil[i].k!==semua[i].k||obTampil[i].saya!==semua[i].saya)awal=false;
+  if(awal&&n){
+    for(i=0;i<n;i++)if(obTampil[i].st!==semua[i].st)gantiStatus(OBP.children[i],semua[i]);
+    if(semua.length>n){var t=document.createElement('div'),lain=0,el;
+      t.innerHTML=semua.slice(n).map(function(d,j){return htmlDoa(d,semua[n+j-1]);}).join('');
+      while((el=t.firstChild)){if(el.nodeType===1){el.classList.add('baru');if(!el.classList.contains('saya'))lain++;}OBP.appendChild(el);}
+      if(!bawah&&lain){obBaruN+=lain;tandaBaru();}}}
+  else OBP.innerHTML=semua.map(function(d,j){return htmlDoa(d,semua[j-1]);}).join('');
+  obTampil=semua.map(function(d){return {k:d.k,saya:d.saya,st:d.st};});
+  if(bawah)keBawah();}
+function cekGulir(){OBD.classList.toggle('gulir',OBD.scrollHeight>OBD.clientHeight+1);}
+var ukT=0;function ukurNanti(){clearTimeout(ukT);ukT=setTimeout(function(){if(window.ukurIsi)window.ukurIsi();},80);}
+function lukisDinding(){lukisDinding0();OB.classList.toggle('sepi',OBD.classList.contains('sepi'));cekGulir();ukurNanti();}
+OBB.addEventListener('click',function(){obBaruN=0;OBB.hidden=true;try{OBD.scrollTo({top:OBD.scrollHeight,behavior:'smooth'});}catch(e){keBawah();}});
+OBD.addEventListener('scroll',function(){ikutBawah=OBD.scrollHeight-OBD.scrollTop-OBD.clientHeight<32;if(ikutBawah&&!OBB.hidden){obBaruN=0;OBB.hidden=true;}},{passive:true});
+/* huruf selesai dimuat / kolom tulis memanjang / layar berubah: tetap di doa terbaru bila tamu memang sedang di bawah */
+if(window.ResizeObserver){var obRO=new ResizeObserver(function(){cekGulir();if(ikutBawah)keBawah();ukurNanti();});obRO.observe(OBD);obRO.observe(OBI);obRO.observe(OB);}
+else addEventListener('resize',function(){cekGulir();if(ikutBawah)keBawah();});
+/* geser di dalam daftar doa = menggulir doa (bukan pindah halaman), selama daftar masih bisa digulir ke arah itu */
+function tenangDoa(){var k=pages.indexOf($('ucapan'));return !!ready&&!glide&&k>-1&&Math.abs(PP-k)<.01;}
+function gulirSendiri(el){var y0=0,milik=null;
+  el.addEventListener('touchstart',function(e){y0=e.touches[0].clientY;milik=null;},{passive:true});
+  el.addEventListener('touchmove',function(e){
+    if(milik===null){var dy=y0-e.touches[0].clientY;if(Math.abs(dy)<3)return;
+      var mx=el.scrollHeight-el.clientHeight;milik=mx>1&&tenangDoa()&&(dy>0?el.scrollTop<mx-1:el.scrollTop>1);}
+    if(milik)e.stopPropagation();},{passive:true});
+  el.addEventListener('wheel',function(e){var mx=el.scrollHeight-el.clientHeight;if(mx>1&&(e.deltaY>0?el.scrollTop<mx-1:e.deltaY<0&&el.scrollTop>1))e.stopPropagation();},{passive:true});
+  el.addEventListener('keydown',function(e){var k=e.key,mx=el.scrollHeight-el.clientHeight,
+      d=(k==='ArrowDown'||k==='PageDown'||k==='End')?1:(k==='ArrowUp'||k==='PageUp'||k==='Home')?-1:0;
+    if(d&&mx>1&&(d>0?el.scrollTop<mx-1:el.scrollTop>1))e.stopPropagation();});}
+gulirSendiri(OBD);gulirSendiri(UP);
+/* nama panjang di kolom "Dari": huruf sedikit mengecil agar muat (paling kecil 16px, supaya iPhone tidak memperbesar layar) */
+var UN=$('uNama');
+function pasNama(){UN.style.fontSize='';var fs=17;while(UN.scrollWidth>UN.clientWidth+1&&fs>16){fs-=.5;UN.style.fontSize=fs+'px';}}
+UN.addEventListener('input',pasNama);addEventListener('resize',function(){setTimeout(pasNama,120);});
+if(document.fonts&&document.fonts.ready)document.fonts.ready.then(pasNama);setTimeout(pasNama,0);
+/* kolom doa memanjang sendiri (1-4 baris) */
+function tumbuh(){UP.style.height='';var h=UP.scrollHeight+2;UP.style.height=Math.max(44,Math.min(112,h))+'px';UP.classList.toggle('penuh',h>112);}
+UP.addEventListener('input',tumbuh);
+UP.addEventListener('keydown',function(e){if(e.key==='Enter'&&(e.ctrlKey||e.metaKey)){e.preventDefault();var f=$('fUcap');if(f.requestSubmit)f.requestSubmit();else f.querySelector('[type=submit]').click();}});
+/* pemberitahuan singkat di atas daftar doa */
+function infoOb(t){var o=$('uOut');o.textContent=t;o.classList.remove('pudar');o.hidden=false;OB.classList.add('berinfo');clearTimeout(infoOb.t);
+  infoOb.t=setTimeout(function(){o.classList.add('pudar');OB.classList.remove('berinfo');infoOb.t=setTimeout(function(){o.hidden=true;o.classList.remove('pudar');},450);},3400);}
+function kirimDoa(saya,jb){saya.s='kirim';simpanSaya();ikutBawah=true;lukisDinding();
+  keSheet({aksi:'doa',nama:saya.n,doa:saya.p,situs:jb||''})
+    .then(function(j){saya.s=j.tampil?'ok':'tunggu';saya.t=j.tampil?1:0;simpanSaya();lukisDinding();infoOb('Terima kasih atas doanya.');setTimeout(muatDoa,1500);},
+      function(){saya.s='gagal';simpanSaya();lukisDinding();infoOb('Doa belum terkirim.');});}
+$('fUcap').addEventListener('submit',function(e){e.preventDefault();var f=e.target,nm=f.elements.nama.value.trim(),ps=f.elements.pesan.value.trim();
+  if(!nm){f.elements.nama.focus();return;}if(!ps){f.elements.pesan.focus();return;}
+  var saya={n:nm.slice(0,60),p:ps.slice(0,400),s:'kirim'},k=kunciDoa(saya);
+  f.elements.pesan.value='';tumbuh();ikutBawah=true;
+  if(DOA_SHEET.some(function(d){return kunciDoa(d)===k;})){keBawah();infoOb('Doa ini sudah terkirim. Terima kasih.');return;}
+  DOA_SAYA=DOA_SAYA.filter(function(d){return kunciDoa(d)!==k;});DOA_SAYA.push(saya);
+  if(!SHEET){saya.s='gagal';simpanSaya();lukisDinding();return;}
+  kirimDoa(saya,jebakan(f));});
+OBD.addEventListener('click',function(e){var b=e.target.closest&&e.target.closest('[data-ob]');if(!b)return;
+  var m=b.closest('.ob-m'),k=m&&m.getAttribute('data-k'),saya=null;
+  DOA_SAYA.forEach(function(d){if(kunciDoa(d)===k)saya=d;});if(!saya)return;
+  if(b.getAttribute('data-ob')==='ulang'){if(saya.s!=='kirim')kirimDoa(saya,'');}
+  else copy(pesanDoa(saya.n,saya.p),function(ok){infoOb(ok?'Doa tersalin. Silakan kirimkan kepada kami.':'Belum bisa menyalin. Silakan salin manual.');});});
 lukisDinding();
 try{fetch('ucapan.json',{cache:'no-store'}).then(function(r){return r.ok?r.json():[];}).then(function(a){
-  if(Array.isArray(a)){DOA=a.filter(function(d){return d&&d.n&&d.p;});lukisDinding();}}).catch(function(){});}catch(e){}
-/* v115: doa dari Google Sheets. Diambil sesudah sampul selesai, lalu tiap 90 detik selama undangan terbuka. */
-function muatDoa(){if(!SHEET)return;
-  try{fetch(SHEET+(SHEET.indexOf('?')>-1?'&':'?')+'aksi=doa').then(function(r){return r.json();}).then(function(j){
-    if(!j||!j.ok||!Array.isArray(j.doa))return;
-    var a=j.doa.filter(function(d){return d&&d.n&&d.p;}).map(function(d){return {n:String(d.n),p:String(d.p)};}),s=JSON.stringify(a);
-    if(s!==doaJson){doaJson=s;DOA_SHEET=a;lukisDinding();}}).catch(function(){});}catch(e){}}
+  if(Array.isArray(a)){DOA=a.filter(function(d){return d&&d.n&&d.p;}).map(function(d){return {n:String(d.n),p:String(d.p)};});if(DOA.length)lukisDinding();}}).catch(function(){});}catch(e){}
+/* doa dari Google Sheets: diambil sesudah sampul selesai; tiap 20 detik selama halaman doa terbuka, selain itu tiap 90 detik */
+function muatDoa(){if(!SHEET||doaMuat)return;doaMuat=true;doaKapan=Date.now();
+  var ac=window.AbortController?new AbortController():null,tm=setTimeout(function(){if(ac)ac.abort();},20000);
+  try{fetch(SHEET+(SHEET.indexOf('?')>-1?'&':'?')+'aksi=doa',{signal:ac?ac.signal:undefined}).then(function(r){return r.json();}).then(function(j){
+      clearTimeout(tm);doaMuat=false;if(!j||!j.ok||!Array.isArray(j.doa))throw new Error('isi');
+      var a=j.doa.filter(function(d){return d&&d.n&&d.p;}).map(function(d){return {n:String(d.n),p:String(d.p)};}),s=JSON.stringify(a),pertama=!doaSiap||doaGagal;
+      doaSiap=true;doaGagal=false;
+      if(s!==doaJson||pertama){doaJson=s;DOA_SHEET=a;lukisDinding();}})
+    .catch(function(){clearTimeout(tm);doaMuat=false;if(!doaSiap){doaSiap=true;doaGagal=true;lukisDinding();}});}catch(e){clearTimeout(tm);doaMuat=false;}}
 (function mulaiDoa(){if(!SHEET)return;var c=$('cover');if(c&&!c.hidden){setTimeout(mulaiDoa,1500);return;}
-  muatDoa();setInterval(function(){if(!document.hidden)muatDoa();},90000);
-  document.addEventListener('visibilitychange',function(){if(!document.hidden)muatDoa();});})();
-$('fUcap').addEventListener('submit',function(e){e.preventDefault();var f=e.target,nm=f.elements.nama.value.trim(),ps=f.elements.pesan.value.trim();if(!nm||!ps)return;
-  var msg='Doa untuk Akmal & Amelia\nDari: '+nm+'\n\n'+ps,saya={n:nm,p:ps};
-  DOA_SAYA.push(saya);DOA_SAYA=DOA_SAYA.slice(-5);simpanSaya();
-  lukisDinding();f.elements.pesan.value='';
-  if(!SHEET){kirim($('uOut'),msg,'Terima kasih atas doanya.');return;}
-  var btn=f.querySelector('button[type=submit]');if(btn)btn.disabled=true;
-  tampilOut($('uOut'),'<p class="kc">Mengirim doa…</p>');
-  keSheet({aksi:'doa',nama:nm,doa:ps,situs:jebakan(f)})
-    .then(function(j){saya.t=j.tampil?1:0;simpanSaya();lukisDinding();
-        tampilOut($('uOut'),'<p class="ok">Terima kasih atas doanya.</p><p class="kc">'+(j.tampil?'Doa Anda sudah tampil di dinding doa.':'Doa Anda akan tampil setelah kami baca.')+'</p>');
-        setTimeout(muatDoa,1500);},
-          function(){kirim($('uOut'),msg,'Terima kasih atas doanya.');})
-    .then(function(){if(btn)btn.disabled=false;});});
+  var PGU=$('ucapan'),diSana=false;
+  function cek(){var on=PGU.classList.contains('on');if(on&&!diSana&&Date.now()-doaKapan>8000)muatDoa();diSana=on;}
+  muatDoa();
+  if(window.MutationObserver)new MutationObserver(cek).observe(PGU,{attributes:true,attributeFilter:['class']});
+  setInterval(function(){if(document.hidden)return;cek();if(Date.now()-doaKapan>(PGU.classList.contains('on')?20000:90000))muatDoa();},5000);
+  document.addEventListener('visibilitychange',function(){if(!document.hidden&&Date.now()-doaKapan>8000)muatDoa();});})();
+window.__DOA={muat:function(){doaKapan=0;muatDoa();},info:function(){return {sheet:DOA_SHEET.length,saya:DOA_SAYA.length,tampil:obTampil.length,ikut:ikutBawah};}};
 
 /* ============ hitung mundur ============ */
 var target=new Date(DATA.hari).getTime();
@@ -4311,7 +4487,7 @@ function awalTeks(){var m=UJ?UJ.m:null;if(!m)return '';function d(v){return v?(v
   return 'awal: FCP '+d(m.fcp)+'s  LCP '+d(m.lcp)+'s  sampul-siap '+d(m.t1)+'s  penuh '+d(m.t2)+'s\n';}
 function sfxTeks(){var d=window.SFX&&SFX.dbg?SFX.dbg():null;if(!d)return '';
   return 'suara: gema '+(d.rev?'ya':'-')+' aula '+(d.rev2?'ya':'-')+' derau '+(d.nb?'ya':'-')+'  siap '+n0(d.ms)+'ms irisan'+n0(d.mx)+' pasang'+n0(d.ak)+'\n';}
-function v109Teks(){var h=document.documentElement.classList,q=location.search,w=window.__WM,t='v115 kilau '+(h.contains('kilau-baru')?'B':'L')+(h.contains('kilau-mono')?'m':'')+' adegan '+(w&&w.aktif?'hangat':'mati')+' pita '+(/[?&]pita=lama/.test(q)?'L':'B')+' kartu '+(/[?&]kartu=lama/.test(q)?'L':'B')+' kv '+(window.SAMPUL&&SAMPUL.kv?SAMPUL.kv.s:'-')+' bidang '+(window.__bdk?__bdk.s:'-')+' tajam '+(window.__tjk?__tjk.s+(__tjk.ms?' '+n0(__tjk.ms)+'ms':''):'-')+' satwa '+(window.__swn?__swn.s+' '+__swn.n+'/'+__swn.g:'-')+' bl '+(window.SAMPUL&&SAMPUL.bl?SAMPUL.bl.s+(SAMPUL.bl.ms?' '+n0(SAMPUL.bl.ms)+'ms':''):'-')+' pintu '+(window.SAMPUL&&SAMPUL.pk?SAMPUL.pk.s:'-')+' akhir '+(window.SAMPUL&&SAMPUL.ak?SAMPUL.ak.s+(SAMPUL.ak.ms?' '+n0(SAMPUL.ak.ms)+'ms':''):'-')+' kabut '+(window.SAMPUL&&SAMPUL.kb?SAMPUL.kb.s+(SAMPUL.kb.ds&&SAMPUL.kb.ds!=='-'?' dasar '+SAMPUL.kb.ds:'')+(SAMPUL.kb.ms?' '+n0(SAMPUL.kb.ms)+'ms':''):'-')+' kupu '+((function(){var cv=document.getElementById('cover');return /[?&]kupu=lama/.test(q)?'L':(cv&&cv.classList.contains('kp-b0')?'B':'b?');})())+' lagu-pra '+(window.__laguPra?'ya':'-');
+function v109Teks(){var h=document.documentElement.classList,q=location.search,w=window.__WM,t='v119 kilau '+(h.contains('kilau-baru')?'B':'L')+(h.contains('kilau-mono')?'m':'')+' adegan '+(w&&w.aktif?'hangat':'mati')+' pita '+(/[?&]pita=lama/.test(q)?'L':'B')+' kartu '+(/[?&]kartu=lama/.test(q)?'L':'B')+' kv '+(window.SAMPUL&&SAMPUL.kv?SAMPUL.kv.s:'-')+' bidang '+(window.__bdk?__bdk.s:'-')+' tajam '+(window.__tjk?__tjk.s+(__tjk.ms?' '+n0(__tjk.ms)+'ms':''):'-')+' satwa '+(window.__swn?__swn.s+' '+__swn.n+'/'+__swn.g:'-')+' bl '+(window.SAMPUL&&SAMPUL.bl?SAMPUL.bl.s+(SAMPUL.bl.ms?' '+n0(SAMPUL.bl.ms)+'ms':''):'-')+' pintu '+(window.SAMPUL&&SAMPUL.pk?SAMPUL.pk.s:'-')+' akhir '+(window.SAMPUL&&SAMPUL.ak?SAMPUL.ak.s+(SAMPUL.ak.ms?' '+n0(SAMPUL.ak.ms)+'ms':''):'-')+' kabut '+(window.SAMPUL&&SAMPUL.kb?SAMPUL.kb.s+(SAMPUL.kb.ds&&SAMPUL.kb.ds!=='-'?' dasar '+SAMPUL.kb.ds:'')+(SAMPUL.kb.ms?' '+n0(SAMPUL.kb.ms)+'ms':''):'-')+' kupu '+((function(){var cv=document.getElementById('cover');return /[?&]kupu=lama/.test(q)?'L':(cv&&cv.classList.contains('kp-b0')?'B':'b?');})())+' lagu-pra '+(window.__laguPra?'ya':'-');
   if(w&&w.ms){var k=Object.keys(w.ms);if(k.length)t+=' | '+k.map(function(x){return x.charAt(0)+n0(w.ms[x]);}).join(' ');}
   return t+'\n';}
 function kadTeks(){var c=window.SAMPUL&&SAMPUL.pc;return c?'irama-lorong: '+c.s+(/[?&]kad=0/.test(location.search)?' (DIMATIKAN)':'')+'\n':'';}
