@@ -2167,7 +2167,12 @@ $('fRsvp').addEventListener('submit',function(e){e.preventDefault();var f=e.targ
    jadi halaman tidak memanjang. Doa tamu sendiri di kanan dengan keterangan terkirim / belum terkirim. */
 var DOA=[],DOA_SHEET=[],DOA_SAYA=[],doaJson='',doaSiap=false,doaGagal=false,doaMuat=false,doaKapan=0;
 try{DOA_SAYA=JSON.parse(localStorage.getItem('doaSaya')||'[]').filter(function(d){return d&&d.n&&d.p;});}catch(e){DOA_SAYA=[];}
-function simpanSaya(){try{localStorage.setItem('doaSaya',JSON.stringify(DOA_SAYA.slice(-8).map(function(d){return {n:d.n,p:d.p,t:d.t,s:d.s==='kirim'?'gagal':d.s};})));}catch(x){}}
+function simpanSaya(){try{localStorage.setItem('doaSaya',JSON.stringify(DOA_SAYA.slice(-8).map(function(d){return {n:d.n,p:d.p,t:d.t,s:d.s==='kirim'?'gagal':d.s,w:d.w};})));}catch(x){}}
+/* v120: doa milik HP ini yang sudah terkirim tetapi tidak ada lagi di sheet (dihapus/disembunyikan pengantin) ikut hilang dari HP ini */
+function rapikanSaya(){var ada={},kini=Date.now(),buang=false;DOA_SHEET.forEach(function(d){ada[kunciDoa(d)]=1;});
+  DOA_SAYA=DOA_SAYA.filter(function(d){var st=d.s||(d.t===1?'ok':d.t===0?'tunggu':'gagal');
+    if(st==='ok'&&!ada[kunciDoa(d)]&&(!d.w||kini-d.w>120000)){buang=true;return false;}return true;});
+  if(buang)simpanSaya();return buang;}
 function kunciDoa(d){return String(d.n).trim().toLowerCase()+'|'+String(d.p).replace(/\s+/g,' ').trim().toLowerCase();}
 function pesanDoa(nm,ps){return 'Doa untuk Akmal & Amelia\nDari: '+nm+'\n\n'+ps;}
 var OB=$('obrolan'),OBD=$('dinding'),OBI=$('obIsi'),OBP=$('obPesan'),OBB=$('obBaru'),OBH=$('obHit'),UP=$('uPesan'),obTampil=[],ikutBawah=true,obBaruN=0;
@@ -2252,7 +2257,7 @@ function infoOb(t){var o=$('uOut');o.textContent=t;o.classList.remove('pudar');o
   infoOb.t=setTimeout(function(){o.classList.add('pudar');OB.classList.remove('berinfo');infoOb.t=setTimeout(function(){o.hidden=true;o.classList.remove('pudar');},450);},3400);}
 function kirimDoa(saya,jb){saya.s='kirim';simpanSaya();ikutBawah=true;lukisDinding();
   keSheet({aksi:'doa',nama:saya.n,doa:saya.p,situs:jb||''})
-    .then(function(j){saya.s=j.tampil?'ok':'tunggu';saya.t=j.tampil?1:0;simpanSaya();lukisDinding();infoOb('Terima kasih atas doanya.');setTimeout(muatDoa,1500);},
+    .then(function(j){saya.s=j.tampil?'ok':'tunggu';saya.t=j.tampil?1:0;saya.w=Date.now();simpanSaya();lukisDinding();infoOb('Terima kasih atas doanya.');setTimeout(muatDoa,1500);},
       function(){saya.s='gagal';simpanSaya();lukisDinding();infoOb('Doa belum terkirim.');});}
 $('fUcap').addEventListener('submit',function(e){e.preventDefault();var f=e.target,nm=f.elements.nama.value.trim(),ps=f.elements.pesan.value.trim();
   if(!nm){f.elements.nama.focus();return;}if(!ps){f.elements.pesan.focus();return;}
@@ -2276,8 +2281,8 @@ function muatDoa(){if(!SHEET||doaMuat)return;doaMuat=true;doaKapan=Date.now();
   try{fetch(SHEET+(SHEET.indexOf('?')>-1?'&':'?')+'aksi=doa',{signal:ac?ac.signal:undefined}).then(function(r){return r.json();}).then(function(j){
       clearTimeout(tm);doaMuat=false;if(!j||!j.ok||!Array.isArray(j.doa))throw new Error('isi');
       var a=j.doa.filter(function(d){return d&&d.n&&d.p;}).map(function(d){return {n:String(d.n),p:String(d.p)};}),s=JSON.stringify(a),pertama=!doaSiap||doaGagal;
-      doaSiap=true;doaGagal=false;
-      if(s!==doaJson||pertama){doaJson=s;DOA_SHEET=a;lukisDinding();}})
+      doaSiap=true;doaGagal=false;DOA_SHEET=a;var rp=rapikanSaya();
+      if(s!==doaJson||pertama||rp){doaJson=s;lukisDinding();}})
     .catch(function(){clearTimeout(tm);doaMuat=false;if(!doaSiap){doaSiap=true;doaGagal=true;lukisDinding();}});}catch(e){clearTimeout(tm);doaMuat=false;}}
 (function mulaiDoa(){if(!SHEET)return;var c=$('cover');if(c&&!c.hidden){setTimeout(mulaiDoa,1500);return;}
   var PGU=$('ucapan'),diSana=false;
@@ -4487,7 +4492,7 @@ function awalTeks(){var m=UJ?UJ.m:null;if(!m)return '';function d(v){return v?(v
   return 'awal: FCP '+d(m.fcp)+'s  LCP '+d(m.lcp)+'s  sampul-siap '+d(m.t1)+'s  penuh '+d(m.t2)+'s\n';}
 function sfxTeks(){var d=window.SFX&&SFX.dbg?SFX.dbg():null;if(!d)return '';
   return 'suara: gema '+(d.rev?'ya':'-')+' aula '+(d.rev2?'ya':'-')+' derau '+(d.nb?'ya':'-')+'  siap '+n0(d.ms)+'ms irisan'+n0(d.mx)+' pasang'+n0(d.ak)+'\n';}
-function v109Teks(){var h=document.documentElement.classList,q=location.search,w=window.__WM,t='v119 kilau '+(h.contains('kilau-baru')?'B':'L')+(h.contains('kilau-mono')?'m':'')+' adegan '+(w&&w.aktif?'hangat':'mati')+' pita '+(/[?&]pita=lama/.test(q)?'L':'B')+' kartu '+(/[?&]kartu=lama/.test(q)?'L':'B')+' kv '+(window.SAMPUL&&SAMPUL.kv?SAMPUL.kv.s:'-')+' bidang '+(window.__bdk?__bdk.s:'-')+' tajam '+(window.__tjk?__tjk.s+(__tjk.ms?' '+n0(__tjk.ms)+'ms':''):'-')+' satwa '+(window.__swn?__swn.s+' '+__swn.n+'/'+__swn.g:'-')+' bl '+(window.SAMPUL&&SAMPUL.bl?SAMPUL.bl.s+(SAMPUL.bl.ms?' '+n0(SAMPUL.bl.ms)+'ms':''):'-')+' pintu '+(window.SAMPUL&&SAMPUL.pk?SAMPUL.pk.s:'-')+' akhir '+(window.SAMPUL&&SAMPUL.ak?SAMPUL.ak.s+(SAMPUL.ak.ms?' '+n0(SAMPUL.ak.ms)+'ms':''):'-')+' kabut '+(window.SAMPUL&&SAMPUL.kb?SAMPUL.kb.s+(SAMPUL.kb.ds&&SAMPUL.kb.ds!=='-'?' dasar '+SAMPUL.kb.ds:'')+(SAMPUL.kb.ms?' '+n0(SAMPUL.kb.ms)+'ms':''):'-')+' kupu '+((function(){var cv=document.getElementById('cover');return /[?&]kupu=lama/.test(q)?'L':(cv&&cv.classList.contains('kp-b0')?'B':'b?');})())+' lagu-pra '+(window.__laguPra?'ya':'-');
+function v109Teks(){var h=document.documentElement.classList,q=location.search,w=window.__WM,t='v120 kilau '+(h.contains('kilau-baru')?'B':'L')+(h.contains('kilau-mono')?'m':'')+' adegan '+(w&&w.aktif?'hangat':'mati')+' pita '+(/[?&]pita=lama/.test(q)?'L':'B')+' kartu '+(/[?&]kartu=lama/.test(q)?'L':'B')+' kv '+(window.SAMPUL&&SAMPUL.kv?SAMPUL.kv.s:'-')+' bidang '+(window.__bdk?__bdk.s:'-')+' tajam '+(window.__tjk?__tjk.s+(__tjk.ms?' '+n0(__tjk.ms)+'ms':''):'-')+' satwa '+(window.__swn?__swn.s+' '+__swn.n+'/'+__swn.g:'-')+' bl '+(window.SAMPUL&&SAMPUL.bl?SAMPUL.bl.s+(SAMPUL.bl.ms?' '+n0(SAMPUL.bl.ms)+'ms':''):'-')+' pintu '+(window.SAMPUL&&SAMPUL.pk?SAMPUL.pk.s:'-')+' akhir '+(window.SAMPUL&&SAMPUL.ak?SAMPUL.ak.s+(SAMPUL.ak.ms?' '+n0(SAMPUL.ak.ms)+'ms':''):'-')+' kabut '+(window.SAMPUL&&SAMPUL.kb?SAMPUL.kb.s+(SAMPUL.kb.ds&&SAMPUL.kb.ds!=='-'?' dasar '+SAMPUL.kb.ds:'')+(SAMPUL.kb.ms?' '+n0(SAMPUL.kb.ms)+'ms':''):'-')+' kupu '+((function(){var cv=document.getElementById('cover');return /[?&]kupu=lama/.test(q)?'L':(cv&&cv.classList.contains('kp-b0')?'B':'b?');})())+' lagu-pra '+(window.__laguPra?'ya':'-');
   if(w&&w.ms){var k=Object.keys(w.ms);if(k.length)t+=' | '+k.map(function(x){return x.charAt(0)+n0(w.ms[x]);}).join(' ');}
   return t+'\n';}
 function kadTeks(){var c=window.SAMPUL&&SAMPUL.pc;return c?'irama-lorong: '+c.s+(/[?&]kad=0/.test(location.search)?' (DIMATIKAN)':'')+'\n':'';}
