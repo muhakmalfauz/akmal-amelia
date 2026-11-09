@@ -2352,8 +2352,19 @@ window.__DOA={muat:function(){doaKapan=0;muatDoa();},info:function(){return {she
 
 /* ============ hitung mundur ============ */
 var target=new Date(DATA.hari).getTime();
+/* v123: versi Lampung - Jakarta. Sampai 21 Maret 2027 menghitung mundur ke akad. Sepanjang 21 Maret: "Hari bahagia telah tiba".
+   Mulai 22 Maret 2027 pukul 00.00 WIB (akad & resepsi sudah selesai) otomatis berganti ke hitung mundur Ngunduh Mantu,
+   lengkap dengan tanggal dan tombol Simpan Tanggal-nya. Berganti sendiri walau halaman sedang terbuka. */
+var SELESAI_LAMPUNG=new Date('2027-03-22T00:00:00+07:00').getTime(),keUnduh=false;
+function gantiKeUnduh(){if(keUnduh)return;keUnduh=true;var U=DATA.unduh;target=new Date(U.hari).getTime();
+  $('hDt').textContent=U.tgl;$('calBtn').href=kalender(U);$('cdNote').hidden=true;
+  var cd=document.querySelector('#hitung .cd');if(cd)cd.setAttribute('aria-label','Hitung mundur menuju Ngunduh Mantu');
+  var eb=document.querySelector('#hitung .eyebrow');if(eb)eb.textContent='Menuju Ngunduh Mantu';
+  if(window.ptSegar)setTimeout(window.ptSegar,60);}
 function pad(n){return n<10?'0'+n:''+n;}
-function tick(){var d=target-Date.now();
+function tick(){
+  if(VERSI==='lj'&&!keUnduh&&Date.now()>=SELESAI_LAMPUNG)gantiKeUnduh();
+  var d=target-Date.now();
   if(isNaN(d))return;
   if(d<=0){$('cdD').textContent=$('cdH').textContent=$('cdM').textContent=$('cdS').textContent='00';$('cdNote').textContent='Hari bahagia telah tiba. Terima kasih atas doa Anda.';$('cdNote').hidden=false;return;}
   var s=Math.floor(d/1000);$('cdD').textContent=Math.floor(s/86400);$('cdH').textContent=pad(Math.floor(s%86400/3600));$('cdM').textContent=pad(Math.floor(s%3600/60));$('cdS').textContent=pad(s%60);}
