@@ -19,7 +19,8 @@
 <meta name="twitter:image" content="https://muhakmalfauz.github.io/akmal-amelia/pratinjau.jpg">
 <link rel="icon" type="image/png" sizes="192x192" href="ikon.png">
 <link rel="apple-touch-icon" href="ikon.png">
-<style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}#guestName{transition:opacity .45s ease}
+</style></head><body>
 <script>document.documentElement.classList.add("mewah");if(!/[?&]kilau=lama/.test(location.search))document.documentElement.classList.add("kilau-baru");if(/[?&]pita=lama/.test(location.search))document.documentElement.classList.add("pita-lama");if(/[?&]kartu=lama/.test(location.search))document.documentElement.classList.add("kartu-lama")</script>
 <script>
 /* alat ukur awal (hanya ?uji=1): pewaktu bagian bingkai (b/t/e), pengamat tugas panjang, peristiwa sentuh, dan cat awal */
@@ -2091,11 +2092,28 @@ function frasa(s){return String(s).split('|').map(function(x){return '<span clas
 function polos(s){return String(s).split('|').join(' ');}
 function ph(s){s=String(s);return s.indexOf('[')>-1?'<span class="ph">'+esc(s)+'</span>':esc(s);}
 
-/* ============ nama tamu ============ */
-var guest='';
-try{var q=null;try{q=new URLSearchParams(location.search).get('to');}catch(e){}
-  guest=(q||decodeURIComponent((location.hash||'').slice(1)).replace(/[-_.+]+/g,' ')).trim().slice(0,60);}catch(e){}
-if(guest){$('guestName').textContent=guest;$('rNama').value=guest;$('uNama').value=guest;}
+/* ============ nama tamu ============
+   v121: tautan tamu memakai kode acak (?k=KODE), bukan nama. Nama diambil dari Google Sheets lewat kode itu,
+   jadi nama di tautan tidak bisa diganti-ganti. Tanpa kode, atau kode tidak dikenal: "Tamu Undangan". */
+var guest='',KODE_TAMU='';
+try{KODE_TAMU=String(new URLSearchParams(location.search).get('k')||'').toLowerCase().replace(/[^a-z0-9]/g,'').slice(0,16);}catch(e){}
+function pasangTamu(n){n=String(n||'').replace(/\s+/g,' ').trim().slice(0,60);if(!n||n===guest)return;
+  var lama=guest,g=$('guestName'),a=$('rNama'),b=$('uNama');guest=n;
+  g.style.opacity='0';g.textContent=n;setTimeout(function(){g.style.opacity='';},40);
+  if(a&&(!a.value||a.value===lama))a.value=n;if(b&&(!b.value||b.value===lama))b.value=n;}
+if(KODE_TAMU.length>=6){
+  try{var tc=JSON.parse(localStorage.getItem('tamuKode')||'null');if(tc&&tc.k===KODE_TAMU)pasangTamu(tc.n);}catch(e){}   /* dibuka lagi: nama langsung tampil */
+  var URL_TAMU=String(DATA.sheet||'').trim();
+  if(URL_TAMU){
+    var acT=window.AbortController?new AbortController():null,tmT=setTimeout(function(){if(acT)acT.abort();},20000);
+    try{fetch(URL_TAMU+(URL_TAMU.indexOf('?')>-1?'&':'?')+'aksi=tamu&k='+encodeURIComponent(KODE_TAMU),{signal:acT?acT.signal:undefined})
+      .then(function(r){return r.json();})
+      .then(function(j){clearTimeout(tmT);
+        if(j&&j.ok&&j.nama){pasangTamu(j.nama);try{localStorage.setItem('tamuKode',JSON.stringify({k:KODE_TAMU,n:j.nama}));}catch(e){}}
+        else if(j&&j.ok===false){try{localStorage.removeItem('tamuKode');}catch(e){}}})
+      .catch(function(){clearTimeout(tmT);});}catch(e){}
+  }
+}
 
 /* ============ isi dari DATA ============ */
 function isiMp(p,o){$(p+'Full').textContent=o.lengkap;$(p+'Par').innerHTML=frasa(o.ortu);var g=$(p+'Ig');
